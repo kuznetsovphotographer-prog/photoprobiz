@@ -1,0 +1,17 @@
+{
+  "name": "photoprobiz-lead-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "wrangler types && tsc --noEmit",
+    "types": "wrangler types",
+    "deploy:dry": "wrangler deploy --dry-run",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260908.1",
+    "typescript": "7.0.2",
+    "wrangler": "4.129.1"
+  }
+}

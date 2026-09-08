@@ -8,3 +8,4 @@ output/
 tools/cloudflared.exe
 .playwright-cli/
 Фотографии для сайта по деловым съемкам/
+cloudflare/lead-worker/worker-configuration.d.ts
