@@ -1,0 +1,6 @@
+Official archive: TildaSans-VF_TTF_Web.zip
+Font entry: TildaSans-VF_TTF_Web/TildaSans-VF.ttf
+No standalone license file in archive. Embedded font copyright and license fields:
+0: Copyright (c) 2021 ParaType Ltd.  All rights reserved.
+13: http://scripts.sil.org/OFL
+14: http://scripts.sil.org/OFL

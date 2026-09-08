@@ -1,0 +1,28 @@
+{
+  "name": "photoprobiz-local",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx scripts/prerender.tsx && vite --host 127.0.0.1",
+    "build": "tsc --noEmit && tsx scripts/prerender.tsx && vite build",
+    "preview": "node scripts/serve.mjs",
+    "preview:lan": "node scripts/serve.mjs --host 0.0.0.0",
+    "check": "tsc --noEmit",
+    "test": "node --import tsx --test src/services/lead.test.ts",
+    "prerender": "tsx scripts/prerender.tsx",
+    "assets:desktop-hero": "node scripts/build-desktop-hero.mjs"
+  },
+  "dependencies": {
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "typescript": "7.0.2",
+    "tsx": "4.23.13",
+    "vite": "8.2.2"
+  }
+}

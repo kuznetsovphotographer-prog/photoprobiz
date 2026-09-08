@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+audit/
+output/
+tools/cloudflared.exe
+.playwright-cli/
+Фотографии для сайта по деловым съемкам/

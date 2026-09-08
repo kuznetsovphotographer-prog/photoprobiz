@@ -1,0 +1,81 @@
+{
+  "original": "Фотографии для сайта по деловым съемкам\\gruppovoy-biznes-portret-komandy-muzhchin-moskva.avif",
+  "width": 3261,
+  "height": 2100,
+  "sizes": "100vw",
+  "alt": "Групповой бизнес-портрет команды мужчин в костюмах в интерьере кабинета в Москве",
+  "formats": {
+    "avif": {
+      "src": "images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-3261.avif",
+      "srcSet": "images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-1200.avif 1200w, images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-1440.avif 1440w, images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-1920.avif 1920w, images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-2560.avif 2560w, images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-3261.avif 3261w",
+      "variants": [
+        {
+          "src": "images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-1200.avif",
+          "width": 1200,
+          "height": 773,
+          "bytes": 77467
+        },
+        {
+          "src": "images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-1440.avif",
+          "width": 1440,
+          "height": 927,
+          "bytes": 105986
+        },
+        {
+          "src": "images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-1920.avif",
+          "width": 1920,
+          "height": 1236,
+          "bytes": 170816
+        },
+        {
+          "src": "images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-2560.avif",
+          "width": 2560,
+          "height": 1649,
+          "bytes": 261925
+        },
+        {
+          "src": "images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-3261.avif",
+          "width": 3261,
+          "height": 2100,
+          "bytes": 182506
+        }
+      ]
+    },
+    "webp": {
+      "src": "images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-3261.webp",
+      "srcSet": "images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-1200.webp 1200w, images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-1440.webp 1440w, images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-1920.webp 1920w, images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-2560.webp 2560w, images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-3261.webp 3261w",
+      "variants": [
+        {
+          "src": "images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-1200.webp",
+          "width": 1200,
+          "height": 773,
+          "bytes": 97602
+        },
+        {
+          "src": "images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-1440.webp",
+          "width": 1440,
+          "height": 927,
+          "bytes": 132944
+        },
+        {
+          "src": "images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-1920.webp",
+          "width": 1920,
+          "height": 1236,
+          "bytes": 216592
+        },
+        {
+          "src": "images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-2560.webp",
+          "width": 2560,
+          "height": 1649,
+          "bytes": 339358
+        },
+        {
+          "src": "images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-3261.webp",
+          "width": 3261,
+          "height": 2100,
+          "bytes": 488840
+        }
+      ]
+    }
+  }
+}

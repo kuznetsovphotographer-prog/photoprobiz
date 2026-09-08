@@ -1,0 +1,1591 @@
+{
+  "cookie": {
+    "title": "Footer Cookie Banner",
+    "meta": [
+      {
+        "charset": "utf-8"
+      },
+      {
+        "http-equiv": "Content-Type",
+        "content": "text/html; charset=utf-8"
+      },
+      {
+        "name": "viewport",
+        "content": "width=device-width, initial-scale=1.0"
+      },
+      {
+        "name": "yandex-verification",
+        "content": "5753b16a6787fc12"
+      },
+      {
+        "property": "og:url",
+        "content": "https://photoprobiz.ru/cookie"
+      },
+      {
+        "property": "og:title",
+        "content": "Footer Cookie Banner"
+      },
+      {
+        "property": "og:description",
+        "content": ""
+      },
+      {
+        "property": "og:type",
+        "content": "website"
+      },
+      {
+        "name": "format-detection",
+        "content": "telephone=no"
+      },
+      {
+        "http-equiv": "x-dns-prefetch-control",
+        "content": "on"
+      },
+      {
+        "name": "zen-verification",
+        "content": "1oKIJXP69HpSFxLvikEzNCYzhsrDZvfnIYKAzt7rayoL9fkCk7Qdcd9vbaMezZgd"
+      }
+    ],
+    "canonical": "https://photoprobiz.ru/cookie",
+    "jsonLd": [
+      {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": "Александр Кузнецов — деловой фотограф",
+        "description": "Профессиональные бизнес-портреты и корпоративная съёмка в Москве. Опыт 12 лет, 500+ клиентов. Съёмка в офисе и студии.",
+        "url": "https://photoprobiz.ru/",
+        "telephone": "+79658502552",
+        "email": "thealexmay@yandex.ru",
+        "image": "https://static.tildacdn.com/tild6337-3933-4338-b238-313666393665/dramatichnyy-muzhsko.jpg",
+        "priceRange": "₽₽",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "ул. Правды, 24, стр. 3",
+          "addressLocality": "Москва",
+          "postalCode": "127137",
+          "addressCountry": "RU"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": 55.7558,
+          "longitude": 37.6173
+        },
+        "areaServed": {
+          "@type": "Country",
+          "name": "Россия"
+        },
+        "openingHours": "Mo-Su 10:00-22:00",
+        "sameAs": [
+          "https://www.instagram.com/alkruze/",
+          "https://vk.com/alkruze",
+          "https://t.me/alkruze"
+        ],
+        "hasOfferCatalog": {
+          "@type": "OfferCatalog",
+          "name": "Услуги фотографа",
+          "itemListElement": [
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Деловой портрет в студии",
+                "description": "Бизнес-фотосессия в студии Москвы"
+              },
+              "priceSpecification": {
+                "@type": "PriceSpecification",
+                "price": "15000",
+                "priceCurrency": "RUB"
+              }
+            },
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Корпоративная съёмка в офисе",
+                "description": "Выезд фотографа в офис для съёмки сотрудников"
+              },
+              "priceSpecification": {
+                "@type": "PriceSpecification",
+                "price": "20000",
+                "priceCurrency": "RUB"
+              }
+            }
+          ]
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "5.0",
+          "reviewCount": "9",
+          "bestRating": "5",
+          "worstRating": "1"
+        },
+        "review": [
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Ольга Савина"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Александр пунктуально приехал с профессиональным оборудованием и максимально оперативно сделал великолепные кадры."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Эдуард Шалоносов"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Отличный фотограф. Помог с подбором фотостудии. Чувствуется опыт, стиль и профессионализм."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Станислав Паулаускас"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Александр проделал колоссальную работу всего за 2 часа съемки. Всё было чётко, слаженно, быстро и результативно!"
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Филипп"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Отличный фотограф, приятное общение, получились очень красивые фото. Работа со светом и ракурсами превосходит все ожидания."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Михаил"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Все прошло четко и профессионально! Александр отлично работает со светом и антуражем и знает как и в какую позу надо встать для максимального эффекта! Спасибо! Будем дальше работать."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Анна"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Отличный фотограф. Провёл рекламную фотосъёмку. Хорошее оборудование, большие осветители на аккумуляторах. Обработанные фотографии получили очень оперативно. Стоимость — как договорились. Результатом довольны. Александра рекомендуем."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Татьяна"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Замечательный мастер своего дела. Быстро договорились о съемке, работать с Александром комфортно, видны профессионализм, понимание чего хочет клиент и умение наладить контакт. Работы получились потрясающие! Всем советую!"
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Вера"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Спасибо большое за деловую фотосессию! Фотографироваться в непринужденной обстановке очень понравилось. Вы как-то сразу нашли подход, а это очень ценно. Фотографии получились очень естественными, как я и просила."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Никита"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Съемка прошла легко и интересно, фотографии получились качественными и художественными. Исполнитель сам выходил на связь и исполнял обязательства в кратчайшие сроки. Остался доволен на 100%."
+          }
+        ]
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Александр Кузнецов",
+        "jobTitle": "Деловой фотограф",
+        "description": "Профессиональный фотограф бизнес-портретов и корпоративной съёмки в Москве. Опыт 12 лет, 500+ клиентов.",
+        "url": "https://photoprobiz.ru/",
+        "telephone": "+79658502552",
+        "email": "thealexmay@yandex.ru",
+        "image": "https://static.tildacdn.com/tild6337-3933-4338-b238-313666393665/dramatichnyy-muzhsko.jpg",
+        "sameAs": [
+          "https://www.instagram.com/alkruze/",
+          "https://vk.com/alkruze",
+          "https://t.me/alkruze"
+        ],
+        "worksFor": {
+          "@type": "Organization",
+          "name": "Фотостудия Александра Кузнецова"
+        },
+        "knowsAbout": [
+          "деловой портрет",
+          "корпоративная съёмка",
+          "бизнес-фотография",
+          "студийная съёмка"
+        ]
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Сколько стоит деловой портрет в студии?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Стоимость деловой фотосессии в студии начинается от 15 000 рублей. В стоимость включены: съёмка 1 час, базовая обработка до 100 фотографий, детальная ретушь 10 фотографий, профессиональное световое и фотооборудование."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Где проходит съёмка — в студии или в офисе?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Возможны оба варианта. Студийная съёмка проходит в Москве. Выезд фотографа в офис для корпоративной съёмки сотрудников также доступен — стоимость от 20 000 рублей."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Как быстро я получу готовые фотографии?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Обработанные фотографии передаются в течение 7 рабочих дней после съёмки. Срочная обработка возможна по договорённости."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Нужно ли готовиться к фотосессии заранее?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Да. Рекомендуем подготовить деловую одежду (2–3 варианта), позаботиться о причёске. Фотограф заранее проконсультирует по позированию и выбору образа."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Опыт работы фотографа Александра Кузнецова?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Александр Кузнецов — профессиональный фотограф с опытом работы 12 лет. За это время выполнено более 500 фотопроектов для руководителей, экспертов и корпоративных клиентов."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "home": {
+    "title": "Деловой портрет и корпоративная съёмка в Москве | Александр Кузнецов",
+    "meta": [
+      {
+        "charset": "utf-8"
+      },
+      {
+        "http-equiv": "Content-Type",
+        "content": "text/html; charset=utf-8"
+      },
+      {
+        "name": "viewport",
+        "content": "width=device-width, initial-scale=1.0"
+      },
+      {
+        "name": "yandex-verification",
+        "content": "5753b16a6787fc12"
+      },
+      {
+        "name": "description",
+        "content": "Деловые портреты и корпоративная фотосъёмка в Москве: в студии или с выездом в офис. Помощь с образом и позированием, готовые фотографии — за 7 дней."
+      },
+      {
+        "property": "og:url",
+        "content": "https://photoprobiz.ru/"
+      },
+      {
+        "property": "og:title",
+        "content": "Деловой портрет и корпоративная съёмка в Москве | Александр Кузнецов"
+      },
+      {
+        "property": "og:description",
+        "content": "Деловые портреты и корпоративная фотосъёмка в Москве: в студии или с выездом в офис. Помощь с образом и позированием, готовые фотографии — за 7 дней."
+      },
+      {
+        "property": "og:type",
+        "content": "website"
+      },
+      {
+        "property": "og:locale",
+        "content": "ru_RU"
+      },
+      {
+        "property": "og:site_name",
+        "content": "Александр Кузнецов — деловой фотограф"
+      },
+      {
+        "property": "og:image",
+        "content": "https://photoprobiz.ru/images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-1200.webp"
+      },
+      {
+        "property": "og:image:width",
+        "content": "1200"
+      },
+      {
+        "property": "og:image:height",
+        "content": "773"
+      },
+      {
+        "property": "og:image:alt",
+        "content": "Групповой бизнес-портрет команды мужчин в интерьере кабинета"
+      },
+      {
+        "name": "twitter:card",
+        "content": "summary_large_image"
+      },
+      {
+        "name": "twitter:title",
+        "content": "Деловой портрет и корпоративная съёмка в Москве"
+      },
+      {
+        "name": "twitter:description",
+        "content": "Деловые портреты и корпоративная фотосъёмка в студии или с выездом в офис по Москве."
+      },
+      {
+        "name": "twitter:image",
+        "content": "https://photoprobiz.ru/images/gruppovoy-biznes-portret-komandy-muzhchin-v-interiere-desktop-2ec2cefcf-1200.webp"
+      },
+      {
+        "name": "twitter:image:alt",
+        "content": "Групповой бизнес-портрет команды мужчин в интерьере кабинета"
+      },
+      {
+        "name": "format-detection",
+        "content": "telephone=no"
+      },
+      {
+        "http-equiv": "x-dns-prefetch-control",
+        "content": "on"
+      },
+      {
+        "name": "zen-verification",
+        "content": "1oKIJXP69HpSFxLvikEzNCYzhsrDZvfnIYKAzt7rayoL9fkCk7Qdcd9vbaMezZgd"
+      }
+    ],
+    "canonical": "https://photoprobiz.ru/",
+    "jsonLd": [
+      {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": "Александр Кузнецов — деловой фотограф",
+        "description": "Профессиональные бизнес-портреты и корпоративная съёмка в Москве. Опыт 12 лет, 500+ клиентов. Съёмка в офисе и студии.",
+        "url": "https://photoprobiz.ru/",
+        "telephone": "+79658502552",
+        "email": "thealexmay@yandex.ru",
+        "image": "https://static.tildacdn.com/tild6337-3933-4338-b238-313666393665/dramatichnyy-muzhsko.jpg",
+        "priceRange": "₽₽",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "ул. Правды, 24, стр. 3",
+          "addressLocality": "Москва",
+          "postalCode": "127137",
+          "addressCountry": "RU"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": 55.7558,
+          "longitude": 37.6173
+        },
+        "areaServed": {
+          "@type": "Country",
+          "name": "Россия"
+        },
+        "openingHours": "Mo-Su 10:00-22:00",
+        "sameAs": [
+          "https://www.instagram.com/alkruze/",
+          "https://vk.com/alkruze",
+          "https://t.me/alkruze"
+        ],
+        "hasOfferCatalog": {
+          "@type": "OfferCatalog",
+          "name": "Услуги фотографа",
+          "itemListElement": [
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Деловой портрет в студии",
+                "description": "Бизнес-фотосессия в студии Москвы"
+              },
+              "priceSpecification": {
+                "@type": "PriceSpecification",
+                "price": "15000",
+                "priceCurrency": "RUB"
+              }
+            },
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Корпоративная съёмка в офисе",
+                "description": "Выезд фотографа в офис для съёмки сотрудников"
+              },
+              "priceSpecification": {
+                "@type": "PriceSpecification",
+                "price": "20000",
+                "priceCurrency": "RUB"
+              }
+            }
+          ]
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "5.0",
+          "reviewCount": "9",
+          "bestRating": "5",
+          "worstRating": "1"
+        },
+        "review": [
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Ольга Савина"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Александр пунктуально приехал с профессиональным оборудованием и максимально оперативно сделал великолепные кадры."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Эдуард Шалоносов"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Отличный фотограф. Помог с подбором фотостудии. Чувствуется опыт, стиль и профессионализм."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Станислав Паулаускас"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Александр проделал колоссальную работу всего за 2 часа съемки. Всё было чётко, слаженно, быстро и результативно!"
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Филипп"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Отличный фотограф, приятное общение, получились очень красивые фото. Работа со светом и ракурсами превосходит все ожидания."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Михаил"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Все прошло четко и профессионально! Александр отлично работает со светом и антуражем и знает как и в какую позу надо встать для максимального эффекта! Спасибо! Будем дальше работать."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Анна"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Отличный фотограф. Провёл рекламную фотосъёмку. Хорошее оборудование, большие осветители на аккумуляторах. Обработанные фотографии получили очень оперативно. Стоимость — как договорились. Результатом довольны. Александра рекомендуем."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Татьяна"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Замечательный мастер своего дела. Быстро договорились о съемке, работать с Александром комфортно, видны профессионализм, понимание чего хочет клиент и умение наладить контакт. Работы получились потрясающие! Всем советую!"
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Вера"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Спасибо большое за деловую фотосессию! Фотографироваться в непринужденной обстановке очень понравилось. Вы как-то сразу нашли подход, а это очень ценно. Фотографии получились очень естественными, как я и просила."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Никита"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Съемка прошла легко и интересно, фотографии получились качественными и художественными. Исполнитель сам выходил на связь и исполнял обязательства в кратчайшие сроки. Остался доволен на 100%."
+          }
+        ]
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Александр Кузнецов",
+        "jobTitle": "Деловой фотограф",
+        "description": "Профессиональный фотограф бизнес-портретов и корпоративной съёмки в Москве. Опыт 12 лет, 500+ клиентов.",
+        "url": "https://photoprobiz.ru/",
+        "telephone": "+79658502552",
+        "email": "thealexmay@yandex.ru",
+        "image": "https://static.tildacdn.com/tild6337-3933-4338-b238-313666393665/dramatichnyy-muzhsko.jpg",
+        "sameAs": [
+          "https://www.instagram.com/alkruze/",
+          "https://vk.com/alkruze",
+          "https://t.me/alkruze"
+        ],
+        "worksFor": {
+          "@type": "Organization",
+          "name": "Фотостудия Александра Кузнецова"
+        },
+        "knowsAbout": [
+          "деловой портрет",
+          "корпоративная съёмка",
+          "бизнес-фотография",
+          "студийная съёмка"
+        ]
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Сколько стоит деловой портрет в студии?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Стоимость деловой фотосессии в студии начинается от 15 000 рублей. В стоимость включены: съёмка 1 час, базовая обработка до 100 фотографий, детальная ретушь 10 фотографий, профессиональное световое и фотооборудование."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Где проходит съёмка — в студии или в офисе?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Возможны оба варианта. Студийная съёмка проходит в Москве. Выезд фотографа в офис для корпоративной съёмки сотрудников также доступен — стоимость от 20 000 рублей."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Как быстро я получу готовые фотографии?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Обработанные фотографии передаются в течение 7 рабочих дней после съёмки. Срочная обработка возможна по договорённости."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Нужно ли готовиться к фотосессии заранее?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Да. Рекомендуем подготовить деловую одежду (2–3 варианта), позаботиться о причёске. Фотограф заранее проконсультирует по позированию и выбору образа."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Опыт работы фотографа Александра Кузнецова?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Александр Кузнецов — профессиональный фотограф с опытом работы 12 лет. За это время выполнено более 500 фотопроектов для руководителей, экспертов и корпоративных клиентов."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "page132097826": {
+    "title": "Страница благодарности",
+    "meta": [
+      {
+        "charset": "utf-8"
+      },
+      {
+        "http-equiv": "Content-Type",
+        "content": "text/html; charset=utf-8"
+      },
+      {
+        "name": "viewport",
+        "content": "width=device-width, initial-scale=1.0"
+      },
+      {
+        "name": "yandex-verification",
+        "content": "5753b16a6787fc12"
+      },
+      {
+        "property": "og:url",
+        "content": "https://photoprobiz.ru/thankyou"
+      },
+      {
+        "property": "og:title",
+        "content": "Страница благодарности"
+      },
+      {
+        "property": "og:description",
+        "content": ""
+      },
+      {
+        "property": "og:type",
+        "content": "website"
+      },
+      {
+        "property": "og:image",
+        "content": "https://static.tildacdn.com/tild3133-3236-4463-b661-316136633633/__2026-04-05_150258.png"
+      },
+      {
+        "name": "format-detection",
+        "content": "telephone=no"
+      },
+      {
+        "http-equiv": "x-dns-prefetch-control",
+        "content": "on"
+      },
+      {
+        "name": "robots",
+        "content": "noindex"
+      },
+      {
+        "name": "zen-verification",
+        "content": "1oKIJXP69HpSFxLvikEzNCYzhsrDZvfnIYKAzt7rayoL9fkCk7Qdcd9vbaMezZgd"
+      }
+    ],
+    "canonical": "https://photoprobiz.ru/thankyou",
+    "jsonLd": [
+      {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": "Александр Кузнецов — деловой фотограф",
+        "description": "Профессиональные бизнес-портреты и корпоративная съёмка в Москве. Опыт 12 лет, 500+ клиентов. Съёмка в офисе и студии.",
+        "url": "https://photoprobiz.ru/",
+        "telephone": "+79658502552",
+        "email": "thealexmay@yandex.ru",
+        "image": "https://static.tildacdn.com/tild6337-3933-4338-b238-313666393665/dramatichnyy-muzhsko.jpg",
+        "priceRange": "₽₽",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "ул. Правды, 24, стр. 3",
+          "addressLocality": "Москва",
+          "postalCode": "127137",
+          "addressCountry": "RU"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": 55.7558,
+          "longitude": 37.6173
+        },
+        "areaServed": {
+          "@type": "Country",
+          "name": "Россия"
+        },
+        "openingHours": "Mo-Su 10:00-22:00",
+        "sameAs": [
+          "https://www.instagram.com/alkruze/",
+          "https://vk.com/alkruze",
+          "https://t.me/alkruze"
+        ],
+        "hasOfferCatalog": {
+          "@type": "OfferCatalog",
+          "name": "Услуги фотографа",
+          "itemListElement": [
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Деловой портрет в студии",
+                "description": "Бизнес-фотосессия в студии Москвы"
+              },
+              "priceSpecification": {
+                "@type": "PriceSpecification",
+                "price": "15000",
+                "priceCurrency": "RUB"
+              }
+            },
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Корпоративная съёмка в офисе",
+                "description": "Выезд фотографа в офис для съёмки сотрудников"
+              },
+              "priceSpecification": {
+                "@type": "PriceSpecification",
+                "price": "20000",
+                "priceCurrency": "RUB"
+              }
+            }
+          ]
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "5.0",
+          "reviewCount": "9",
+          "bestRating": "5",
+          "worstRating": "1"
+        },
+        "review": [
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Ольга Савина"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Александр пунктуально приехал с профессиональным оборудованием и максимально оперативно сделал великолепные кадры."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Эдуард Шалоносов"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Отличный фотограф. Помог с подбором фотостудии. Чувствуется опыт, стиль и профессионализм."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Станислав Паулаускас"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Александр проделал колоссальную работу всего за 2 часа съемки. Всё было чётко, слаженно, быстро и результативно!"
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Филипп"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Отличный фотограф, приятное общение, получились очень красивые фото. Работа со светом и ракурсами превосходит все ожидания."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Михаил"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Все прошло четко и профессионально! Александр отлично работает со светом и антуражем и знает как и в какую позу надо встать для максимального эффекта! Спасибо! Будем дальше работать."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Анна"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Отличный фотограф. Провёл рекламную фотосъёмку. Хорошее оборудование, большие осветители на аккумуляторах. Обработанные фотографии получили очень оперативно. Стоимость — как договорились. Результатом довольны. Александра рекомендуем."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Татьяна"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Замечательный мастер своего дела. Быстро договорились о съемке, работать с Александром комфортно, видны профессионализм, понимание чего хочет клиент и умение наладить контакт. Работы получились потрясающие! Всем советую!"
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Вера"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Спасибо большое за деловую фотосессию! Фотографироваться в непринужденной обстановке очень понравилось. Вы как-то сразу нашли подход, а это очень ценно. Фотографии получились очень естественными, как я и просила."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Никита"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Съемка прошла легко и интересно, фотографии получились качественными и художественными. Исполнитель сам выходил на связь и исполнял обязательства в кратчайшие сроки. Остался доволен на 100%."
+          }
+        ]
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Александр Кузнецов",
+        "jobTitle": "Деловой фотограф",
+        "description": "Профессиональный фотограф бизнес-портретов и корпоративной съёмки в Москве. Опыт 12 лет, 500+ клиентов.",
+        "url": "https://photoprobiz.ru/",
+        "telephone": "+79658502552",
+        "email": "thealexmay@yandex.ru",
+        "image": "https://static.tildacdn.com/tild6337-3933-4338-b238-313666393665/dramatichnyy-muzhsko.jpg",
+        "sameAs": [
+          "https://www.instagram.com/alkruze/",
+          "https://vk.com/alkruze",
+          "https://t.me/alkruze"
+        ],
+        "worksFor": {
+          "@type": "Organization",
+          "name": "Фотостудия Александра Кузнецова"
+        },
+        "knowsAbout": [
+          "деловой портрет",
+          "корпоративная съёмка",
+          "бизнес-фотография",
+          "студийная съёмка"
+        ]
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Сколько стоит деловой портрет в студии?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Стоимость деловой фотосессии в студии начинается от 15 000 рублей. В стоимость включены: съёмка 1 час, базовая обработка до 100 фотографий, детальная ретушь 10 фотографий, профессиональное световое и фотооборудование."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Где проходит съёмка — в студии или в офисе?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Возможны оба варианта. Студийная съёмка проходит в Москве. Выезд фотографа в офис для корпоративной съёмки сотрудников также доступен — стоимость от 20 000 рублей."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Как быстро я получу готовые фотографии?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Обработанные фотографии передаются в течение 7 рабочих дней после съёмки. Срочная обработка возможна по договорённости."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Нужно ли готовиться к фотосессии заранее?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Да. Рекомендуем подготовить деловую одежду (2–3 варианта), позаботиться о причёске. Фотограф заранее проконсультирует по позированию и выбору образа."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Опыт работы фотографа Александра Кузнецова?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Александр Кузнецов — профессиональный фотограф с опытом работы 12 лет. За это время выполнено более 500 фотопроектов для руководителей, экспертов и корпоративных клиентов."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "page135439646": {
+    "title": "Footer Cookie Banner",
+    "meta": [
+      {
+        "charset": "utf-8"
+      },
+      {
+        "http-equiv": "Content-Type",
+        "content": "text/html; charset=utf-8"
+      },
+      {
+        "name": "viewport",
+        "content": "width=device-width, initial-scale=1.0"
+      },
+      {
+        "name": "yandex-verification",
+        "content": "5753b16a6787fc12"
+      },
+      {
+        "property": "og:url",
+        "content": "https://photoprobiz.ru/cookie"
+      },
+      {
+        "property": "og:title",
+        "content": "Footer Cookie Banner"
+      },
+      {
+        "property": "og:description",
+        "content": ""
+      },
+      {
+        "property": "og:type",
+        "content": "website"
+      },
+      {
+        "name": "format-detection",
+        "content": "telephone=no"
+      },
+      {
+        "http-equiv": "x-dns-prefetch-control",
+        "content": "on"
+      },
+      {
+        "name": "zen-verification",
+        "content": "1oKIJXP69HpSFxLvikEzNCYzhsrDZvfnIYKAzt7rayoL9fkCk7Qdcd9vbaMezZgd"
+      }
+    ],
+    "canonical": "https://photoprobiz.ru/cookie",
+    "jsonLd": [
+      {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": "Александр Кузнецов — деловой фотограф",
+        "description": "Профессиональные бизнес-портреты и корпоративная съёмка в Москве. Опыт 12 лет, 500+ клиентов. Съёмка в офисе и студии.",
+        "url": "https://photoprobiz.ru/",
+        "telephone": "+79658502552",
+        "email": "thealexmay@yandex.ru",
+        "image": "https://static.tildacdn.com/tild6337-3933-4338-b238-313666393665/dramatichnyy-muzhsko.jpg",
+        "priceRange": "₽₽",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "ул. Правды, 24, стр. 3",
+          "addressLocality": "Москва",
+          "postalCode": "127137",
+          "addressCountry": "RU"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": 55.7558,
+          "longitude": 37.6173
+        },
+        "areaServed": {
+          "@type": "Country",
+          "name": "Россия"
+        },
+        "openingHours": "Mo-Su 10:00-22:00",
+        "sameAs": [
+          "https://www.instagram.com/alkruze/",
+          "https://vk.com/alkruze",
+          "https://t.me/alkruze"
+        ],
+        "hasOfferCatalog": {
+          "@type": "OfferCatalog",
+          "name": "Услуги фотографа",
+          "itemListElement": [
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Деловой портрет в студии",
+                "description": "Бизнес-фотосессия в студии Москвы"
+              },
+              "priceSpecification": {
+                "@type": "PriceSpecification",
+                "price": "15000",
+                "priceCurrency": "RUB"
+              }
+            },
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Корпоративная съёмка в офисе",
+                "description": "Выезд фотографа в офис для съёмки сотрудников"
+              },
+              "priceSpecification": {
+                "@type": "PriceSpecification",
+                "price": "20000",
+                "priceCurrency": "RUB"
+              }
+            }
+          ]
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "5.0",
+          "reviewCount": "9",
+          "bestRating": "5",
+          "worstRating": "1"
+        },
+        "review": [
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Ольга Савина"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Александр пунктуально приехал с профессиональным оборудованием и максимально оперативно сделал великолепные кадры."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Эдуард Шалоносов"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Отличный фотограф. Помог с подбором фотостудии. Чувствуется опыт, стиль и профессионализм."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Станислав Паулаускас"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Александр проделал колоссальную работу всего за 2 часа съемки. Всё было чётко, слаженно, быстро и результативно!"
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Филипп"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Отличный фотограф, приятное общение, получились очень красивые фото. Работа со светом и ракурсами превосходит все ожидания."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Михаил"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Все прошло четко и профессионально! Александр отлично работает со светом и антуражем и знает как и в какую позу надо встать для максимального эффекта! Спасибо! Будем дальше работать."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Анна"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Отличный фотограф. Провёл рекламную фотосъёмку. Хорошее оборудование, большие осветители на аккумуляторах. Обработанные фотографии получили очень оперативно. Стоимость — как договорились. Результатом довольны. Александра рекомендуем."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Татьяна"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Замечательный мастер своего дела. Быстро договорились о съемке, работать с Александром комфортно, видны профессионализм, понимание чего хочет клиент и умение наладить контакт. Работы получились потрясающие! Всем советую!"
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Вера"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Спасибо большое за деловую фотосессию! Фотографироваться в непринужденной обстановке очень понравилось. Вы как-то сразу нашли подход, а это очень ценно. Фотографии получились очень естественными, как я и просила."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Никита"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Съемка прошла легко и интересно, фотографии получились качественными и художественными. Исполнитель сам выходил на связь и исполнял обязательства в кратчайшие сроки. Остался доволен на 100%."
+          }
+        ]
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Александр Кузнецов",
+        "jobTitle": "Деловой фотограф",
+        "description": "Профессиональный фотограф бизнес-портретов и корпоративной съёмки в Москве. Опыт 12 лет, 500+ клиентов.",
+        "url": "https://photoprobiz.ru/",
+        "telephone": "+79658502552",
+        "email": "thealexmay@yandex.ru",
+        "image": "https://static.tildacdn.com/tild6337-3933-4338-b238-313666393665/dramatichnyy-muzhsko.jpg",
+        "sameAs": [
+          "https://www.instagram.com/alkruze/",
+          "https://vk.com/alkruze",
+          "https://t.me/alkruze"
+        ],
+        "worksFor": {
+          "@type": "Organization",
+          "name": "Фотостудия Александра Кузнецова"
+        },
+        "knowsAbout": [
+          "деловой портрет",
+          "корпоративная съёмка",
+          "бизнес-фотография",
+          "студийная съёмка"
+        ]
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Сколько стоит деловой портрет в студии?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Стоимость деловой фотосессии в студии начинается от 15 000 рублей. В стоимость включены: съёмка 1 час, базовая обработка до 100 фотографий, детальная ретушь 10 фотографий, профессиональное световое и фотооборудование."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Где проходит съёмка — в студии или в офисе?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Возможны оба варианта. Студийная съёмка проходит в Москве. Выезд фотографа в офис для корпоративной съёмки сотрудников также доступен — стоимость от 20 000 рублей."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Как быстро я получу готовые фотографии?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Обработанные фотографии передаются в течение 7 рабочих дней после съёмки. Срочная обработка возможна по договорённости."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Нужно ли готовиться к фотосессии заранее?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Да. Рекомендуем подготовить деловую одежду (2–3 варианта), позаботиться о причёске. Фотограф заранее проконсультирует по позированию и выбору образа."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Опыт работы фотографа Александра Кузнецова?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Александр Кузнецов — профессиональный фотограф с опытом работы 12 лет. За это время выполнено более 500 фотопроектов для руководителей, экспертов и корпоративных клиентов."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "thankyou": {
+    "title": "Страница благодарности",
+    "meta": [
+      {
+        "charset": "utf-8"
+      },
+      {
+        "http-equiv": "Content-Type",
+        "content": "text/html; charset=utf-8"
+      },
+      {
+        "name": "viewport",
+        "content": "width=device-width, initial-scale=1.0"
+      },
+      {
+        "name": "yandex-verification",
+        "content": "5753b16a6787fc12"
+      },
+      {
+        "property": "og:url",
+        "content": "https://photoprobiz.ru/thankyou"
+      },
+      {
+        "property": "og:title",
+        "content": "Страница благодарности"
+      },
+      {
+        "property": "og:description",
+        "content": ""
+      },
+      {
+        "property": "og:type",
+        "content": "website"
+      },
+      {
+        "property": "og:image",
+        "content": "https://static.tildacdn.com/tild3133-3236-4463-b661-316136633633/__2026-04-05_150258.png"
+      },
+      {
+        "name": "format-detection",
+        "content": "telephone=no"
+      },
+      {
+        "http-equiv": "x-dns-prefetch-control",
+        "content": "on"
+      },
+      {
+        "name": "robots",
+        "content": "noindex"
+      },
+      {
+        "name": "zen-verification",
+        "content": "1oKIJXP69HpSFxLvikEzNCYzhsrDZvfnIYKAzt7rayoL9fkCk7Qdcd9vbaMezZgd"
+      }
+    ],
+    "canonical": "https://photoprobiz.ru/thankyou",
+    "jsonLd": [
+      {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": "Александр Кузнецов — деловой фотограф",
+        "description": "Профессиональные бизнес-портреты и корпоративная съёмка в Москве. Опыт 12 лет, 500+ клиентов. Съёмка в офисе и студии.",
+        "url": "https://photoprobiz.ru/",
+        "telephone": "+79658502552",
+        "email": "thealexmay@yandex.ru",
+        "image": "https://static.tildacdn.com/tild6337-3933-4338-b238-313666393665/dramatichnyy-muzhsko.jpg",
+        "priceRange": "₽₽",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "ул. Правды, 24, стр. 3",
+          "addressLocality": "Москва",
+          "postalCode": "127137",
+          "addressCountry": "RU"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": 55.7558,
+          "longitude": 37.6173
+        },
+        "areaServed": {
+          "@type": "Country",
+          "name": "Россия"
+        },
+        "openingHours": "Mo-Su 10:00-22:00",
+        "sameAs": [
+          "https://www.instagram.com/alkruze/",
+          "https://vk.com/alkruze",
+          "https://t.me/alkruze"
+        ],
+        "hasOfferCatalog": {
+          "@type": "OfferCatalog",
+          "name": "Услуги фотографа",
+          "itemListElement": [
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Деловой портрет в студии",
+                "description": "Бизнес-фотосессия в студии Москвы"
+              },
+              "priceSpecification": {
+                "@type": "PriceSpecification",
+                "price": "15000",
+                "priceCurrency": "RUB"
+              }
+            },
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Корпоративная съёмка в офисе",
+                "description": "Выезд фотографа в офис для съёмки сотрудников"
+              },
+              "priceSpecification": {
+                "@type": "PriceSpecification",
+                "price": "20000",
+                "priceCurrency": "RUB"
+              }
+            }
+          ]
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "5.0",
+          "reviewCount": "9",
+          "bestRating": "5",
+          "worstRating": "1"
+        },
+        "review": [
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Ольга Савина"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Александр пунктуально приехал с профессиональным оборудованием и максимально оперативно сделал великолепные кадры."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Эдуард Шалоносов"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Отличный фотограф. Помог с подбором фотостудии. Чувствуется опыт, стиль и профессионализм."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Станислав Паулаускас"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Александр проделал колоссальную работу всего за 2 часа съемки. Всё было чётко, слаженно, быстро и результативно!"
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Филипп"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Отличный фотограф, приятное общение, получились очень красивые фото. Работа со светом и ракурсами превосходит все ожидания."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Михаил"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Все прошло четко и профессионально! Александр отлично работает со светом и антуражем и знает как и в какую позу надо встать для максимального эффекта! Спасибо! Будем дальше работать."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Анна"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Отличный фотограф. Провёл рекламную фотосъёмку. Хорошее оборудование, большие осветители на аккумуляторах. Обработанные фотографии получили очень оперативно. Стоимость — как договорились. Результатом довольны. Александра рекомендуем."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Татьяна"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Замечательный мастер своего дела. Быстро договорились о съемке, работать с Александром комфортно, видны профессионализм, понимание чего хочет клиент и умение наладить контакт. Работы получились потрясающие! Всем советую!"
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Вера"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Спасибо большое за деловую фотосессию! Фотографироваться в непринужденной обстановке очень понравилось. Вы как-то сразу нашли подход, а это очень ценно. Фотографии получились очень естественными, как я и просила."
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Никита"
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            },
+            "reviewBody": "Съемка прошла легко и интересно, фотографии получились качественными и художественными. Исполнитель сам выходил на связь и исполнял обязательства в кратчайшие сроки. Остался доволен на 100%."
+          }
+        ]
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Александр Кузнецов",
+        "jobTitle": "Деловой фотограф",
+        "description": "Профессиональный фотограф бизнес-портретов и корпоративной съёмки в Москве. Опыт 12 лет, 500+ клиентов.",
+        "url": "https://photoprobiz.ru/",
+        "telephone": "+79658502552",
+        "email": "thealexmay@yandex.ru",
+        "image": "https://static.tildacdn.com/tild6337-3933-4338-b238-313666393665/dramatichnyy-muzhsko.jpg",
+        "sameAs": [
+          "https://www.instagram.com/alkruze/",
+          "https://vk.com/alkruze",
+          "https://t.me/alkruze"
+        ],
+        "worksFor": {
+          "@type": "Organization",
+          "name": "Фотостудия Александра Кузнецова"
+        },
+        "knowsAbout": [
+          "деловой портрет",
+          "корпоративная съёмка",
+          "бизнес-фотография",
+          "студийная съёмка"
+        ]
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Сколько стоит деловой портрет в студии?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Стоимость деловой фотосессии в студии начинается от 15 000 рублей. В стоимость включены: съёмка 1 час, базовая обработка до 100 фотографий, детальная ретушь 10 фотографий, профессиональное световое и фотооборудование."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Где проходит съёмка — в студии или в офисе?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Возможны оба варианта. Студийная съёмка проходит в Москве. Выезд фотографа в офис для корпоративной съёмки сотрудников также доступен — стоимость от 20 000 рублей."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Как быстро я получу готовые фотографии?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Обработанные фотографии передаются в течение 7 рабочих дней после съёмки. Срочная обработка возможна по договорённости."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Нужно ли готовиться к фотосессии заранее?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Да. Рекомендуем подготовить деловую одежду (2–3 варианта), позаботиться о причёске. Фотограф заранее проконсультирует по позированию и выбору образа."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Опыт работы фотографа Александра Кузнецова?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Александр Кузнецов — профессиональный фотограф с опытом работы 12 лет. За это время выполнено более 500 фотопроектов для руководителей, экспертов и корпоративных клиентов."
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

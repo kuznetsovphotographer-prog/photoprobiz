@@ -1,0 +1,46 @@
+{
+  "src": "images/gruppovoy-biznes-portret-komandy-muzhchin-moskva-83b9eaad2-1852.avif",
+  "srcSet": "images/gruppovoy-biznes-portret-komandy-muzhchin-moskva-83b9eaad2-320.avif 320w, images/gruppovoy-biznes-portret-komandy-muzhchin-moskva-83b9eaad2-640.avif 640w, images/gruppovoy-biznes-portret-komandy-muzhchin-moskva-83b9eaad2-960.avif 960w, images/gruppovoy-biznes-portret-komandy-muzhchin-moskva-83b9eaad2-1440.avif 1440w, images/gruppovoy-biznes-portret-komandy-muzhchin-moskva-83b9eaad2-1852.avif 1852w",
+  "width": 1852,
+  "height": 1251,
+  "format": "avif",
+  "quality": 70,
+  "effort": 6,
+  "chromaSubsampling": "4:4:4",
+  "original": "Фотографии для сайта по деловым съемкам\\gruppovoy-biznes-portret-komandy-muzhchin-moskva.jpg",
+  "sourceUrls": [
+    "https://static.tildacdn.com/tild6462-6236-4238-a337-643133373834/gruppovoy-biznes-por.webp"
+  ],
+  "variants": [
+    {
+      "src": "images/gruppovoy-biznes-portret-komandy-muzhchin-moskva-83b9eaad2-320.avif",
+      "width": 320,
+      "height": 216,
+      "bytes": 5622
+    },
+    {
+      "src": "images/gruppovoy-biznes-portret-komandy-muzhchin-moskva-83b9eaad2-640.avif",
+      "width": 640,
+      "height": 432,
+      "bytes": 18498
+    },
+    {
+      "src": "images/gruppovoy-biznes-portret-komandy-muzhchin-moskva-83b9eaad2-960.avif",
+      "width": 960,
+      "height": 648,
+      "bytes": 37067
+    },
+    {
+      "src": "images/gruppovoy-biznes-portret-komandy-muzhchin-moskva-83b9eaad2-1440.avif",
+      "width": 1440,
+      "height": 973,
+      "bytes": 71923
+    },
+    {
+      "src": "images/gruppovoy-biznes-portret-komandy-muzhchin-moskva-83b9eaad2-1852.avif",
+      "width": 1852,
+      "height": 1251,
+      "bytes": 99664
+    }
+  ]
+}

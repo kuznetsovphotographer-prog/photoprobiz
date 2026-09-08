@@ -1,0 +1,405 @@
+/* Original interaction states, with platform class names removed.
+   Hover trigger relationships below are compiled from the audited source. */
+.design-node.mobile-ico:hover svg path{fill:#a38773}
+.design-node.gray{transition:all 700ms cubic-bezier(.4,0,.2,1)}
+.design-node.gray:hover{filter:grayscale(0%)!important}
+.design-node.filter-br{transition:all 300ms cubic-bezier(.4,0,.2,1)}
+.design-node.card:hover .filter-br,.design-node.card:focus-visible .filter-br{filter:brightness(.8)}
+.design-node.bg > .design-node:not(.reveal-layer){transition:color 150ms cubic-bezier(.4,0,.2,1),background-color 150ms cubic-bezier(.4,0,.2,1),border-color 150ms cubic-bezier(.4,0,.2,1),fill 150ms cubic-bezier(.4,0,.2,1),stroke 150ms cubic-bezier(.4,0,.2,1),text-decoration-color 150ms cubic-bezier(.4,0,.2,1)}
+/* The original direct-child selector also excludes its inserted animation wrapper. */
+.design-node.bg:hover > .design-node:not(.reveal-layer){background-image:linear-gradient(0turn,#fff 0%,#fff 100%)!important}
+.design-node.str{cursor:pointer}
+.design-node.str svg path{stroke:#000;fill:#000}
+.design-node.str:hover svg path{stroke:#8b6f5c;fill:#8b6f5c}
+.design-node.line{width:0%!important;transition:all 500ms cubic-bezier(.4,0,.2,1)}
+.design-node.btn-text{transition:all 500ms cubic-bezier(.4,0,.2,1)}
+.design-node.btn-anim:hover .line,.design-node.btn-anim:focus-visible .line{width:100%!important}
+.design-node.btn-anim:hover .btn-text,.design-node.btn-anim:focus-visible .btn-text{opacity:.8}
+
+/* The header phone link keeps one stable light icon while it rings. */
+.section-header .n20{overflow:visible}
+.section-header .n20 .button-content > [aria-hidden="true"][style*="--hover-icon"]{
+  flex:0 0 10px!important;
+  background-image:url('/icons/phone-flip-solid-nor-d71426c1e.svg')!important;
+  transform-origin:50% 66%;
+  will-change:transform;
+}
+.section-header .n20 .button-text{display:inline-block;transform-origin:left center;transition:transform 180ms ease-out}
+@media (hover:hover) and (pointer:fine){
+  .section-header .n20:is(:hover,:focus-visible) .button-text{transform:scale(1.045)}
+  .section-header .n20:is(:hover,:focus-visible) .button-content > [aria-hidden="true"][style*="--hover-icon"]{animation:pp-header-phone-ring 1180ms cubic-bezier(.2,.75,.2,1) infinite}
+}
+@keyframes pp-header-phone-ring{
+  0%,55%,100%{transform:rotate(0deg) translateX(0)}
+  8.7%{transform:rotate(-12deg) translateX(-.7px)}
+  17.4%{transform:rotate(11deg) translateX(.7px)}
+  26.1%{transform:rotate(-8deg) translateX(-.45px)}
+  34.8%{transform:rotate(6deg) translateX(.35px)}
+  43.5%{transform:rotate(-3deg) translateX(-.2px)}
+}
+
+.section-office-content .n205 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-office-content:has(:is(.n205:hover,.n205:focus-visible)) .n205 > .reveal-layer{opacity:0.9!important;transform:translate(0px,0px) scale(1.02,1.02) rotate(0deg)!important}
+.section-office-content .n226 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-office-content:has(:is(.n226:hover,.n226:focus-visible)) .n226 > .reveal-layer{opacity:0.9!important;transform:translate(0px,0px) scale(1.02,1.02) rotate(0deg)!important}
+.section-office-content .n269 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-office-content:has(:is(.n226:hover,.n226:focus-visible)) .n269 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}
+.section-office-content .n276 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-office-content:has(:is(.n205:hover,.n205:focus-visible)) .n276 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}
+.section-savina-review .n315 > .reveal-layer{transition:transform 300ms linear,opacity 300ms linear}
+.section-savina-review:has(:is(.n315:hover,.n315:focus-visible)) .n315 > .reveal-layer{opacity:0.9!important;transform:translate(0px,0px) scale(1.02,1.02) rotate(0deg)!important}
+.section-savina-review .n324 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-savina-review:has(:is(.n315:hover,.n315:focus-visible)) .n324 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}
+.section-studio-content .n342 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-studio-content:has(:is(.n342:hover,.n342:focus-visible)) .n342 > .reveal-layer{opacity:0.9!important;transform:translate(0px,0px) scale(1.02,1.02) rotate(0deg)!important}
+.section-studio-content .n351 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-studio-content:has(:is(.n351:hover,.n351:focus-visible)) .n351 > .reveal-layer{opacity:0.9!important;transform:translate(0px,0px) scale(1.02,1.02) rotate(0deg)!important}
+.section-outdoor .n418 > .reveal-layer{transition:transform 700ms cubic-bezier(0.4, 0, 0.2, 1),opacity 700ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-outdoor:has(:is(.n416:hover,.n416:focus-visible)) .n418 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1.05,1.05) rotate(0deg)!important}
+.section-outdoor .n425 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-outdoor:has(:is(.n416:hover,.n416:focus-visible)) .n425 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}
+.section-eduard-review .n465 > .reveal-layer{transition:transform 700ms cubic-bezier(0.4, 0, 0.2, 1),opacity 700ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-eduard-review:has(:is(.n463:hover,.n463:focus-visible)) .n465 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1.05,1.05) rotate(0deg)!important}
+.section-eduard-review .n474 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-eduard-review:has(:is(.n463:hover,.n463:focus-visible)) .n474 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}
+.section-locations .n522 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-locations:has(:is(.n522:hover,.n522:focus-visible)) .n522 > .reveal-layer{opacity:0.9!important;transform:translate(0px,0px) scale(1.02,1.02) rotate(0deg)!important}
+.section-locations .n539 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-locations:has(:is(.n539:hover,.n539:focus-visible)) .n539 > .reveal-layer{opacity:0.9!important;transform:translate(0px,0px) scale(1.02,1.02) rotate(0deg)!important}
+.section-locations .n556 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-locations:has(:is(.n556:hover,.n556:focus-visible)) .n556 > .reveal-layer{opacity:0.9!important;transform:translate(0px,0px) scale(1.02,1.02) rotate(0deg)!important}
+.section-stanislav-review .n901 > .reveal-layer{transition:transform 700ms cubic-bezier(0.4, 0, 0.2, 1),opacity 700ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-stanislav-review:has(:is(.n899:hover,.n899:focus-visible)) .n901 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1.05,1.05) rotate(0deg)!important}
+.section-stanislav-review .n910 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-stanislav-review:has(:is(.n899:hover,.n899:focus-visible)) .n910 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}
+.section-pricing-content .n1100 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-pricing-content:has(:is(.n1100:hover,.n1100:focus-visible)) .n1100 > .reveal-layer{opacity:0.9!important;transform:translate(0px,0px) scale(1.02,1.02) rotate(0deg)!important}
+.section-pricing-content .n1131 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-pricing-content:has(:is(.n1131:hover,.n1131:focus-visible)) .n1131 > .reveal-layer{opacity:0.9!important;transform:translate(0px,0px) scale(1.02,1.02) rotate(0deg)!important}
+.section-pricing-content .n1166 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-pricing-content:has(:is(.n1166:hover,.n1166:focus-visible)) .n1166 > .reveal-layer{opacity:0.9!important;transform:translate(0px,0px) scale(1.02,1.02) rotate(0deg)!important}
+.section-pricing-content .n1197 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-pricing-content:has(:is(.n1166:hover,.n1166:focus-visible)) .n1197 > .reveal-layer{opacity:0.9!important;transform:translate(0px,0px) scale(1.02,1.02) rotate(0deg)!important}
+.section-portfolio-content .n1441 > .reveal-layer{transition:transform 700ms cubic-bezier(0.4, 0, 0.2, 1),opacity 700ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-portfolio-content:has(:is(.n1431:hover,.n1431:focus-visible)) .n1441 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1.05,1.05) rotate(0deg)!important}
+.section-portfolio-content .n1461 > .reveal-layer{transition:transform 700ms cubic-bezier(0.4, 0, 0.2, 1),opacity 700ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-portfolio-content:has(:is(.n1451:hover,.n1451:focus-visible)) .n1461 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1.05,1.05) rotate(0deg)!important}
+.section-portfolio-content .n1481 > .reveal-layer{transition:transform 700ms cubic-bezier(0.4, 0, 0.2, 1),opacity 700ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-portfolio-content:has(:is(.n1471:hover,.n1471:focus-visible)) .n1481 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1.05,1.05) rotate(0deg)!important}
+.section-portfolio-content .n1501 > .reveal-layer{transition:transform 700ms cubic-bezier(0.4, 0, 0.2, 1),opacity 700ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-portfolio-content:has(:is(.n1491:hover,.n1491:focus-visible)) .n1501 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1.05,1.05) rotate(0deg)!important}
+.section-portfolio-content .n1521 > .reveal-layer{transition:transform 700ms cubic-bezier(0.4, 0, 0.2, 1),opacity 700ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-portfolio-content:has(:is(.n1511:hover,.n1511:focus-visible)) .n1521 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1.05,1.05) rotate(0deg)!important}
+.section-portfolio-content .n1571 > .reveal-layer{transition:transform 700ms cubic-bezier(0.4, 0, 0.2, 1),opacity 700ms cubic-bezier(0.4, 0, 0.2, 1)}
+.section-portfolio-content:has(:is(.n1561:hover,.n1561:focus-visible)) .n1571 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1.05,1.05) rotate(0deg)!important}
+.section-footer .n1653 > .reveal-layer{transition:transform 300ms linear,opacity 300ms linear}
+.section-footer:has(:is(.n1653:hover,.n1653:focus-visible)) .n1653 > .reveal-layer{opacity:0.8!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}
+@media (min-width:480px){.section-studio-content .n382 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}}
+@media (min-width:480px){.section-studio-content:has(:is(.n351:hover,.n351:focus-visible)) .n382 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}}
+@media (min-width:640px){.section-studio-content .n389 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}}
+@media (min-width:640px){.section-studio-content:has(:is(.n342:hover,.n342:focus-visible)) .n389 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}}
+@media (min-width:1200px){.section-locations .n559 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}}
+@media (min-width:1200px){.section-locations:has(:is(.n539:hover,.n539:focus-visible)) .n559 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}}
+@media (min-width:1200px){.section-locations .n566 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}}
+@media (min-width:1200px){.section-locations:has(:is(.n556:hover,.n556:focus-visible)) .n566 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}}
+@media (min-width:1200px){.section-locations .n573 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}}
+@media (min-width:1200px){.section-locations:has(:is(.n522:hover,.n522:focus-visible)) .n573 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}}
+@media (min-width:1200px){.section-pricing-content .n1202 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}}
+@media (min-width:1200px){.section-pricing-content:has(:is(.n1100:hover,.n1100:focus-visible)) .n1202 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}}
+@media (min-width:1200px){.section-pricing-content .n1222 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}}
+@media (min-width:1200px){.section-pricing-content:has(:is(.n1131:hover,.n1131:focus-visible)) .n1222 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}}
+@media (min-width:1200px){.section-pricing-content .n1227 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}}
+@media (min-width:1200px){.section-pricing-content:has(:is(.n1166:hover,.n1166:focus-visible)) .n1227 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}}
+@media (min-width:1200px){.section-portfolio-content .n1444 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}}
+@media (min-width:1200px){.section-portfolio-content:has(:is(.n1431:hover,.n1431:focus-visible)) .n1444 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}}
+@media (min-width:1200px){.section-portfolio-content .n1464 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}}
+@media (min-width:1200px){.section-portfolio-content:has(:is(.n1451:hover,.n1451:focus-visible)) .n1464 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}}
+@media (min-width:1200px){.section-portfolio-content .n1484 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}}
+@media (min-width:1200px){.section-portfolio-content:has(:is(.n1471:hover,.n1471:focus-visible)) .n1484 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}}
+@media (min-width:1200px){.section-portfolio-content .n1504 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}}
+@media (min-width:1200px){.section-portfolio-content:has(:is(.n1491:hover,.n1491:focus-visible)) .n1504 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}}
+@media (min-width:1200px){.section-portfolio-content .n1524 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}}
+@media (min-width:1200px){.section-portfolio-content:has(:is(.n1511:hover,.n1511:focus-visible)) .n1524 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}}
+@media (min-width:1200px){.section-portfolio-content .n1574 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}}
+@media (min-width:1200px){.section-portfolio-content:has(:is(.n1561:hover,.n1561:focus-visible)) .n1574 > .reveal-layer{opacity:1!important;transform:translate(0px,0px) scale(1,1) rotate(0deg)!important}}
+@media (hover: hover) and (pointer: fine) {
+  .section-confidentiality .n685 {
+    cursor: default;
+  }
+
+  .section-confidentiality .n689,
+  .section-confidentiality .n691 {
+    transform-origin: left center;
+    transition: transform .4s cubic-bezier(.22, 1, .36, 1);
+  }
+
+  .section-confidentiality .n685:hover .n688 {
+    transform-origin: 50% 82%;
+    animation: pp-lock-rock .72s ease-out 1;
+  }
+
+  .section-confidentiality .n685:hover .n689,
+  .section-confidentiality .n685:hover .n691 {
+    transform: scale(1.018);
+  }
+}
+
+@keyframes pp-lock-rock {
+  0%, 100% { transform: rotate(0deg); }
+  18% { transform: rotate(-7deg); }
+  38% { transform: rotate(6deg); }
+  58% { transform: rotate(-4deg); }
+  76% { transform: rotate(2deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-confidentiality .n689,
+  .section-confidentiality .n691 { transition-duration: .01ms !important; }
+  .section-confidentiality .n685:hover .n688 { animation: none !important; }
+}
+
+/* Office and studio booking buttons share one directional fill treatment. */
+:is(.section-office-booking .n339, .section-studio-booking .n489) {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+:is(.section-office-booking .n339, .section-studio-booking .n489)::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  clip-path: inset(0 100% 0 0);
+  background: linear-gradient(105deg, #000 0%, #171717 100%);
+  content: '';
+  pointer-events: none;
+  transition: clip-path .62s cubic-bezier(.22, 1, .36, 1);
+}
+
+:is(.section-office-booking .n339, .section-studio-booking .n489) .button-content {
+  position: relative;
+  z-index: 1;
+}
+
+:is(.section-office-booking .n339, .section-studio-booking .n489) .button-text {
+  color: transparent !important;
+  background: linear-gradient(90deg, #fff 0 49.5%, #1c1917 50.5% 100%);
+  background-position: 100% 0;
+  background-size: 205% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transition: background-position .62s cubic-bezier(.22, 1, .36, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :is(.section-office-booking .n339, .section-studio-booking .n489):is(:hover, :focus-visible)::before {
+    clip-path: inset(0);
+  }
+
+  :is(.section-office-booking .n339, .section-studio-booking .n489):is(:hover, :focus-visible) .button-text {
+    background-position: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.section-office-booking .n339, .section-studio-booking .n489)::before,
+  :is(.section-office-booking .n339, .section-studio-booking .n489) .button-text {
+    transition-duration: .01ms !important;
+  }
+}
+
+/* The tethered-preview image and its caption react as one visual card. */
+.section-tethering .n709,
+.section-tethering .n712,
+.section-tethering .n713,
+.section-tethering .n718 {
+  will-change: transform;
+}
+
+.section-tethering .n709 {
+  transform-origin: center;
+  transition:
+    transform .58s cubic-bezier(.22, 1, .36, 1),
+    filter .58s cubic-bezier(.22, 1, .36, 1);
+}
+
+.section-tethering .n712 {
+  transform-origin: center;
+  transition: transform .75s cubic-bezier(.22, 1, .36, 1);
+}
+
+.section-tethering .n713 {
+  transform-origin: center;
+  transition:
+    transform .58s cubic-bezier(.22, 1, .36, 1),
+    box-shadow .58s cubic-bezier(.22, 1, .36, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .section-tethering:has(:is(.n709, .n713):hover) .n709 {
+    transform: translateY(-4px) scale(1.012);
+    filter: drop-shadow(0 20px 24px rgb(28 25 23 / 12%));
+  }
+
+  .section-tethering:has(:is(.n709, .n713):hover) .n712 {
+    transform: scale(1.026);
+  }
+
+  .section-tethering:has(:is(.n709, .n713):hover) .n713 {
+    transform: translateY(-7px) scale(1.018);
+    box-shadow: 0 15px 30px rgb(28 25 23 / 14%);
+  }
+
+  .section-tethering:has(:is(.n709, .n713):hover) .n718 {
+    transform-origin: center;
+    animation: pp-laptop-wake .78s cubic-bezier(.22, 1, .36, 1) 1;
+  }
+
+  .section-tethering:has(:is(.n709, .n713):hover) .n718 svg {
+    animation: pp-laptop-glow .78s ease-out 1;
+  }
+}
+
+@keyframes pp-laptop-wake {
+  0%, 100% { transform: translateY(0) scale(1); }
+  35% { transform: translateY(-2px) scale(1.1); }
+  65% { transform: translateY(0) scale(1.045); }
+}
+
+@keyframes pp-laptop-glow {
+  0%, 100% { filter: none; }
+  42% { filter: drop-shadow(0 0 5px rgb(163 135 115 / 70%)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-tethering .n709,
+  .section-tethering .n712,
+  .section-tethering .n713 {
+    transition-duration: .01ms !important;
+  }
+
+  .section-tethering .n718,
+  .section-tethering .n718 svg {
+    animation: none !important;
+  }
+}
+
+/* Every specialist card opens the same Instagram link as its icon. */
+.section-team .team-card-interactive,
+.section-team .team-card-interactive * {
+  cursor: pointer !important;
+}
+
+.section-team .team-card-interactive {
+  outline: none;
+  transform-origin: center;
+  transition: transform .54s cubic-bezier(.22, 1, .36, 1);
+}
+
+.section-team .team-card-interactive > .design-node {
+  isolation: isolate;
+  overflow: hidden;
+  transition:
+    border-color .54s ease,
+    box-shadow .54s cubic-bezier(.22, 1, .36, 1);
+}
+
+.section-team .team-card-interactive > .design-node::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  clip-path: inset(0 100% 0 0);
+  background: #000;
+  content: '';
+  pointer-events: none;
+  transition: clip-path .68s cubic-bezier(.22, 1, .36, 1);
+}
+
+.section-team .team-card-interactive > .design-node > .design-node {
+  z-index: 1;
+}
+
+.section-team .team-card-interactive .design-node {
+  transition: color .36s ease;
+}
+
+.section-team .team-card-interactive svg path {
+  transition: fill .36s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .section-team .team-card-interactive:hover,
+  .section-team .team-card-interactive:focus-visible {
+    transform: translateY(-5px);
+  }
+
+  .section-team .team-card-interactive:is(:hover, :focus-visible) > .design-node {
+    border-color: #000;
+    box-shadow: 0 18px 36px rgb(28 25 23 / 15%);
+  }
+
+  .section-team .team-card-interactive:is(:hover, :focus-visible) > .design-node::before {
+    clip-path: inset(0);
+  }
+
+  .section-team .team-card-interactive:is(:hover, :focus-visible) .design-node {
+    color: #fff !important;
+    text-decoration-color: #fff !important;
+  }
+
+  .section-team .team-card-interactive:is(:hover, :focus-visible) svg path {
+    fill: #fff !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-team .team-card-interactive,
+  .section-team .team-card-interactive > .design-node,
+  .section-team .team-card-interactive > .design-node::before,
+  .section-team .team-card-interactive .design-node,
+  .section-team .team-card-interactive svg path {
+    transition-duration: .01ms !important;
+  }
+}
+
+/* Portraits that open a gallery share the same quiet zoom interaction. */
+.image-gallery-link,
+.image-gallery-link * {
+  cursor: pointer !important;
+}
+
+.image-gallery-link {
+  overflow: hidden;
+  outline: none;
+  transition: box-shadow .5s cubic-bezier(.22, 1, .36, 1);
+}
+
+.image-gallery-link .photo {
+  transform: scale(1);
+  transform-origin: center;
+  transition: transform .72s cubic-bezier(.22, 1, .36, 1);
+  will-change: transform;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .image-gallery-link:is(:hover, :focus-visible) {
+    box-shadow: 0 18px 48px -14px rgb(28 25 23 / 32%);
+  }
+
+  .image-gallery-link:is(:hover, :focus-visible) .photo {
+    transform: scale(1.035);
+  }
+}
+
+.image-gallery-link:focus-visible {
+  outline: 2px solid #a38773;
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image-gallery-link,
+  .image-gallery-link .photo {
+    transition-duration: .01ms !important;
+  }
+}

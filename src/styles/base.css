@@ -1,0 +1,27 @@
+@font-face{font-family:TildaSans;src:url('/fonts/tilda-sans-variable.woff2') format('woff2');font-style:normal;font-weight:250 900;font-display:swap}
+:root{font-family:TildaSans,Arial,sans-serif;color:#1c1917;background:#fff;font-synthesis:none;--accent:#8b6f5c;--cream:#f8f6f0}
+body{margin:0;overflow-x:clip}html{scroll-behavior:smooth;overflow-x:clip}button,input,select,textarea{font:inherit}button,a,input,select{touch-action:manipulation}button{cursor:pointer}a{color:inherit}*{box-sizing:border-box}:focus-visible{outline:2px solid #a38773;outline-offset:4px}::selection{background:#d4c5b9;color:#1c1917}
+.skip-link{position:fixed;top:-100px;left:20px;z-index:4000;background:white;padding:12px 20px;color:#1c1917}.skip-link:focus{top:10px}
+.retouch-comparison{position:relative;width:100%;max-width:100%;overflow:hidden;border-radius:12px;aspect-ratio:3/4;background:#f5f5f5;box-shadow:0 20px 25px -5px #0000001a,0 10px 10px -5px #0000000a;font-family:Arial,sans-serif}
+.retouch-comparison img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}.retouch-before{clip-path:polygon(0 0,var(--split) 0,var(--split) 100%,0 100%)}
+.retouch-comparison input{position:absolute;inset:0;width:100%;height:100%;z-index:3;opacity:0;cursor:ew-resize;margin:0}.retouch-comparison:focus-within{outline:2px solid #a38773;outline-offset:4px}
+.retouch-line{position:absolute;inset:0 auto 0 var(--split);width:2px;background:white;transform:translateX(-50%);box-shadow:0 0 10px #0005;pointer-events:none}
+.retouch-handle{position:absolute;top:50%;left:var(--split);transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#fff;color:#755a49;box-shadow:0 2px 10px #0005;pointer-events:none;font:24px Arial}
+.retouch-label{position:absolute;top:16px;padding:4px 12px;border-radius:4px;font:700 12px Arial;letter-spacing:.05em;text-transform:uppercase;color:white;pointer-events:none;transition:opacity .25s}.before-label{left:16px;background:#0009}.after-label{right:16px;background:#755a49e6}
+.design-node.reveal-layer{transition:opacity .2s,transform .2s}.page-section a:hover .reveal-layer,.page-section a:focus-visible .reveal-layer{opacity:1!important;transform:none!important}
+.design-node.gray{transition:filter .7s}.design-node.gray:hover{filter:grayscale(0)!important}.design-node.str{cursor:pointer}.design-node.str:hover svg path{stroke:#8b6f5c;fill:#8b6f5c}.design-node.hide-scrollbar{scrollbar-width:none}
+@media(max-width:640px){.retouch-comparison{aspect-ratio:4/5}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+.design-node.scroll-reveal.is-revealed .reveal-layer{opacity:1!important;transform:none!important}
+
+/* Keep the cursor language consistent across the imported Tilda composition. */
+body, body * { cursor: default !important; }
+a[href], a[href] *,
+button, button *,
+[role='button'], [role='button'] *,
+summary, summary *,
+label, label *,
+select, option,
+input[type='button'], input[type='submit'], input[type='reset'],
+input[type='checkbox'], input[type='radio'], input[type='range'],
+.design-node.str, .design-node.str * { cursor: pointer !important; }

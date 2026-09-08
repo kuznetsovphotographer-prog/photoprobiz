@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>photoprobiz.ru — открыть локальный сайт</title>
+    <style>
+      :root { font-family: Arial, Helvetica, sans-serif; background: #f5f2eb; color: #202020; }
+      * { box-sizing: border-box; }
+      body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 24px; }
+      main { width: min(680px, 100%); border-top: 1px solid currentColor; padding-top: 24px; }
+      p { max-width: 560px; font-size: 17px; line-height: 1.5; }
+      .eyebrow { margin: 0 0 44px; font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+      h1 { margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(46px, 10vw, 92px); font-weight: 400; line-height: .9; letter-spacing: -.045em; }
+      .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 36px; }
+      a { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; padding: 0 20px; border: 1px solid currentColor; color: inherit; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-decoration: none; text-transform: uppercase; }
+      a:first-child { background: #202020; color: #fff; }
+      code { padding: 2px 5px; background: #e5e1d7; font-family: Consolas, monospace; }
+      #status { min-height: 1.5em; color: #625e56; }
+      @media (max-width: 520px) { .actions { display: grid; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">photoprobiz.ru · локальная версия</p>
+      <h1>Бизнес‑портреты в Москве</h1>
+      <p id="status">Проверяю, запущен ли сайт…</p>
+      <p>Если сайт ещё не запущен, закройте эту страницу и дважды нажмите <code>ОТКРЫТЬ-САЙТ.cmd</code>. Он соберёт сайт, откроет его в браузере и покажет адрес для устройств в той же Wi‑Fi сети.</p>
+      <div class="actions">
+        <a href="http://127.0.0.1:4173/">Открыть сайт</a>
+        <a href="./README.md">Инструкция</a>
+      </div>
+    </main>
+    <script>
+      const siteUrl = 'http://127.0.0.1:4173/';
+      const status = document.querySelector('#status');
+      fetch(siteUrl, { mode: 'no-cors', cache: 'no-store' })
+        .then(() => { status.textContent = 'Сайт запущен. Открываю…'; window.location.replace(siteUrl); })
+        .catch(() => { status.textContent = 'Сервер пока не запущен.'; });
+    </script>
+  </body>
+</html>

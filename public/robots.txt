@@ -1,0 +1,22 @@
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /thankyou/
+Disallow: /cookie/
+Disallow: /page132097826.html
+Disallow: /page135439646.html
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /thankyou/
+Disallow: /cookie/
+Disallow: /page132097826.html
+Disallow: /page135439646.html
+
+User-agent: *
+Allow: /
+Disallow: /thankyou/
+Disallow: /cookie/
+Disallow: /page132097826.html
+Disallow: /page135439646.html
+
+Sitemap: https://photoprobiz.ru/sitemap.xml
