@@ -64,6 +64,7 @@ export function LeadForm({ variant = 'modal', packageName, basePath = './', onSu
   const contactKey = inline ? 'phone' : method;
   const rawContact = contacts[contactKey];
   const contact = phoneMode && rawContact ? `+${prefix}${nationalDigits(rawContact, prefix, countryData.mask)}` : rawContact.trim();
+  const remoteDeliveryEnabled = Boolean(import.meta.env?.VITE_LEAD_ENDPOINT?.trim());
 
   useEffect(() => { if (packageName) setSelectedPackage(packageName); }, [packageName]);
   useEffect(() => () => controllerRef.current?.abort(), []);
@@ -173,8 +174,8 @@ export function LeadForm({ variant = 'modal', packageName, basePath = './', onSu
   const errorMessages = Array.from(new Set(Object.values(errors).filter(Boolean)));
   return (
     <div className={`lead-form-card lead-form-card--${variant}`}>
-      <form ref={formRef} className={`lead-form lead-form--${variant}`} onSubmit={handleSubmit} noValidate aria-label="Заявка на фотосессию" aria-busy={pending} aria-describedby={`${id}-demo`}>
-        <p className="secondary-sr-only" id={`${id}-demo`}>Локальная демонстрационная форма. Заявка не передаётся фотографу и контактные данные не сохраняются.</p>
+      <form ref={formRef} className={`lead-form lead-form--${variant}`} onSubmit={handleSubmit} noValidate aria-label="Заявка на фотосессию" aria-busy={pending} aria-describedby={remoteDeliveryEnabled ? undefined : `${id}-demo`}>
+        {!remoteDeliveryEnabled && <p className="secondary-sr-only" id={`${id}-demo`}>Локальная демонстрационная форма. Заявка не передаётся фотографу и контактные данные не сохраняются.</p>}
         <div className="lead-form-fields">
           <div className="lead-field lead-field--name">
             <label className="lead-label" htmlFor={`${id}-name`}>Имя</label>
@@ -224,7 +225,7 @@ export function LeadForm({ variant = 'modal', packageName, basePath = './', onSu
         <button className="lead-submit" type="submit" disabled={pending}>
           {pending ? <><span className="lead-spinner" aria-hidden="true" />Отправка…</> : inline ? 'ОТПРАВИТЬ И ПОЛУЧИТЬ ЧЕК ЛИСТ' : 'Заказать фотосессию'}
         </button>
-        <span className="secondary-sr-only" role="status">{submitted ? 'Демонстрационная заявка обработана. Контактные данные не передавались.' : pending ? 'Обработка формы' : ''}</span>
+        <span className="secondary-sr-only" role="status">{submitted ? (remoteDeliveryEnabled ? 'Заявка отправлена фотографу.' : 'Демонстрационная заявка обработана. Контактные данные не передавались.') : pending ? 'Обработка формы' : ''}</span>
       </form>
       {!inline && <p className="lead-gift">Оставьте свои контакты и получите подарок<br />Чек-лист «Идеальный бизнес-портрет»</p>}
     </div>
