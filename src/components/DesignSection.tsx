@@ -3,6 +3,7 @@ import { LeadForm } from './LeadForm';
 import assets from '../data/assets.json';
 import heroAvif from '../data/hero-avif.json';
 import desktopHero from '../data/desktop-hero.json';
+import { galleryImageCounts } from '../data/galleryCounts';
 
 export type DesignNode = {
   tag: string; className: string; attrs: Record<string, string>;
@@ -53,6 +54,42 @@ function firstDescendantText(node: DesignNode): string | undefined {
   }
 }
 
+function descendantPlainTexts(node: DesignNode): string[] {
+  const ownText = node.html?.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  return [
+    ...(ownText ? [ownText] : []),
+    ...node.children.flatMap(descendantPlainTexts),
+  ];
+}
+
+function descendantContainsSvg(node: DesignNode): boolean {
+  return Boolean(node.html?.includes('<svg')) || node.children.some(descendantContainsSvg);
+}
+
+function isLegacySeriesCta(node: DesignNode): boolean {
+  if (node.children.length !== 1 || !node.children[0].className.includes('reveal-layer')) return false;
+  const texts = descendantPlainTexts(node);
+  return texts.length === 1 && texts[0].toLocaleLowerCase('ru') === 'смотреть серию';
+}
+
+function isLegacyGalleryCount(node: DesignNode): boolean {
+  if (node.children.length !== 1 || node.children[0].children.length !== 2) return false;
+  const texts = descendantPlainTexts(node);
+  return texts.length === 1 && /^\d{1,3}$/.test(texts[0]) && descendantContainsSvg(node);
+}
+
+function GalleryCountBadge({ count }: { count: number }) {
+  return <span className="gallery-count-badge" aria-hidden="true">
+    <span>{count}</span>
+    <svg viewBox="0 0 18 15" aria-hidden="true">
+      <rect x="3.5" y="1.5" width="13" height="10" rx="1.2" />
+      <path d="M1.5 4v8.2c0 .72.58 1.3 1.3 1.3h10.7" />
+      <circle cx="7" cy="5" r="1" />
+      <path d="m5 9 2.5-2.2 2 1.6 1.7-1.4 3.3 2.8" />
+    </svg>
+  </span>;
+}
+
 function Photo({ image, basePath }: {image: NonNullable<DesignNode['image']>;basePath:string}) {
   const srcSet = image.srcSet?.replace(/(^|,\s*)([^\s,]+)/g, (_m, separator, src) => separator + basePath + src);
   const isHero = image.original === heroAvif.original;
@@ -75,9 +112,13 @@ function RetouchComparison({basePath}:{basePath:string}) {
   </div>;
 }
 
-function Node({node, basePath}:{node:DesignNode;basePath:string}) {
+function Node({node, basePath, galleryHref}:{node:DesignNode;basePath:string;galleryHref?:string}) {
   const attributes: Record<string, unknown> = {...node.attrs, className:'design-node '+node.className};
   const imageGalleryLink = imageGalleryLinks[node.className];
+  const declaredHref = imageGalleryLink?.href ?? node.attrs.href;
+  const ownGalleryHref = declaredHref && galleryImageCounts[declaredHref] ? declaredHref : undefined;
+  const activeGalleryHref = ownGalleryHref ?? galleryHref;
+  const galleryCount = activeGalleryHref ? galleryImageCounts[activeGalleryHref] : undefined;
   const tag = imageGalleryLink ? 'a' : node.className === 'n36' ? 'h1' : heroHeadingInlineClasses.has(node.className) ? 'span' : node.tag;
   if (imageGalleryLink) {
     attributes.className += ' image-gallery-link';
@@ -85,6 +126,10 @@ function Node({node, basePath}:{node:DesignNode;basePath:string}) {
     attributes['aria-label'] = imageGalleryLink.label;
     attributes['aria-haspopup'] = 'dialog';
   }
+  if (ownGalleryHref) attributes['aria-haspopup'] = 'dialog';
+  if (isLegacySeriesCta(node)) attributes.className += ' legacy-series-cta';
+  if (isLegacyGalleryCount(node)) attributes.className += ' legacy-gallery-count';
+  if (node.image && galleryCount) attributes.className += ' gallery-badge-host';
   if (teamCardClasses.has(node.className)) {
     const href = firstDescendantHref(node);
     const name = firstDescendantText(node);
@@ -101,12 +146,12 @@ function Node({node, basePath}:{node:DesignNode;basePath:string}) {
   if (attributes.target === '_blank') attributes.rel='noopener noreferrer';
   if (node.widget === 'inline-form') return createElement('div',attributes,<div data-form-root="inline"><LeadForm variant="inline" basePath={basePath}/></div>);
   if (node.widget === 'retouch') return createElement('div',attributes,<RetouchComparison basePath={basePath}/>);
-  if (node.image) return createElement(tag,attributes,<Photo image={node.image} basePath={basePath}/>,node.children.map(child=><Node key={child.className} node={child} basePath={basePath}/>));
+  if (node.image) return createElement(tag,attributes,<Photo image={node.image} basePath={basePath}/>,galleryCount && <GalleryCountBadge count={galleryCount}/>,node.children.map(child=><Node key={child.className} node={child} basePath={basePath} galleryHref={activeGalleryHref}/>));
   if (node.html !== undefined) {
     attributes.dangerouslySetInnerHTML={__html:node.html};
     return createElement(tag,attributes);
   }
-  return createElement(tag,attributes,node.children.map((child)=><Node key={child.className} node={child} basePath={basePath}/>));
+  return createElement(tag,attributes,node.children.map((child)=><Node key={child.className} node={child} basePath={basePath} galleryHref={activeGalleryHref}/>));
 }
 
 export function DesignSection({section,basePath='./'}:{section:SectionData;basePath?:string}) {
