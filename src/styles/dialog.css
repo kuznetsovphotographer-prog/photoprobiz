@@ -120,7 +120,7 @@ body:has(.pp-dialog) .pp-compact-navigation {
   cursor: pointer;
   transition: color .2s ease, transform .2s ease;
 }
-.pp-dialog__close svg { display: block; width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.pp-dialog__close svg { display: block; width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
 .pp-dialog__close:hover { color: #fff; }
 .pp-dialog__close:active { transform: scale(.84) rotate(6deg); }
 .pp-dialog__close:focus-visible, .pp-gallery button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
@@ -152,6 +152,26 @@ body:has(.pp-dialog) .pp-compact-navigation {
   background: transparent;
   touch-action: pan-y pinch-zoom;
 }
+.pp-gallery__track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  will-change: transform;
+}
+.pp-gallery__track.is-settling {
+  transition: transform .38s cubic-bezier(.22, .72, .18, 1);
+}
+.pp-gallery__slide {
+  display: grid;
+  place-items: center;
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
 .pp-gallery__image {
   display: block;
   width: auto;
@@ -163,7 +183,7 @@ body:has(.pp-dialog) .pp-compact-navigation {
   object-fit: contain;
   user-select: none;
   -webkit-user-select: none;
-  animation: pp-gallery-image-in .24s cubic-bezier(.2, .8, .2, 1);
+  -webkit-user-drag: none;
 }
 .pp-gallery__count {
   position: absolute;
@@ -276,7 +296,7 @@ body:has(.pp-dialog) .pp-compact-navigation {
 }
 .pp-gallery__control:hover { background: rgba(255, 255, 255, .1); color: #fff; }
 .pp-gallery__control:active { transform: scale(.82); }
-.pp-gallery__control svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.9; transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
+.pp-gallery__control svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
 .pp-gallery__control--fullscreen[aria-pressed="true"] svg { transform: rotate(90deg) scale(.86); }
 .pp-gallery__control--thumbnails svg { overflow: visible; }
 .pp-gallery__tile { transform-box: fill-box; transform-origin: center; transition: transform .32s cubic-bezier(.2, .85, .2, 1); }
@@ -306,10 +326,6 @@ body:has(.pp-dialog) .pp-compact-navigation {
   }
 }
 
-@keyframes pp-gallery-image-in {
-  from { opacity: .2; transform: scale(.985); }
-  to { opacity: 1; transform: scale(1); }
-}
 @keyframes pp-gallery-sidebar-in {
   from { opacity: 0; transform: translateX(10px); }
   to { opacity: 1; transform: translateX(0); }
@@ -331,7 +347,8 @@ body:has(.pp-dialog) .pp-compact-navigation {
   .office-setup-feature__media img { width: 100%; max-height: 72vh; max-height: 72dvh; }
   .pp-dialog--gallery { padding: 7px; }
   .pp-dialog--gallery .pp-dialog__panel { width: calc(100vw - 14px); height: calc(100vh - 14px); height: calc(100dvh - 14px); }
-  .pp-dialog--gallery .pp-dialog__close { top: 6px; right: 4px; width: 42px; height: 42px; }
+  .pp-dialog--gallery .pp-dialog__close { top: 6px; right: 4px; width: 44px; height: 44px; }
+  .pp-dialog--gallery .pp-dialog__close svg { width: 24px; height: 24px; stroke-width: 1.75; }
   .pp-gallery { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 90px; gap: 7px; }
   .pp-gallery.is-thumbnails-hidden { grid-template-rows: minmax(0, 1fr); }
   .pp-gallery__image { max-width: 100%; max-height: calc(100vh - 111px); max-height: calc(100dvh - 111px); }
@@ -342,9 +359,9 @@ body:has(.pp-dialog) .pp-compact-navigation {
   .pp-gallery__sidebar { grid-row: 2; padding: 0; box-shadow: 0 -1px 0 rgba(255, 255, 255, .09); animation-name: pp-gallery-sidebar-mobile-in; }
   .pp-gallery__thumbnails { grid-template-columns: none; grid-template-rows: 1fr; grid-auto-flow: column; grid-auto-columns: 68px; grid-auto-rows: auto; height: 90px; padding: 4px 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
   .pp-gallery__thumbnails::-webkit-scrollbar { display: none; }
-  .pp-gallery__toolbar { top: 6px; right: 52px; display: flex; width: auto; gap: 6px; }
-  .pp-gallery__control { width: 42px; height: 42px; }
-  .pp-gallery__control svg { width: 20px; height: 20px; }
+  .pp-gallery__toolbar { top: -1px; right: 44px; display: flex; width: auto; gap: 2px; }
+  .pp-gallery__control { width: 44px; height: 44px; }
+  .pp-gallery__control svg { width: 24px; height: 24px; stroke-width: 1.75; }
   .pp-dialog--gallery:fullscreen { padding: 7px; }
   .pp-dialog--gallery:fullscreen .pp-dialog__panel { width: calc(100vw - 14px); height: calc(100vh - 14px); height: calc(100dvh - 14px); }
 }

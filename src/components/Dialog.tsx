@@ -170,7 +170,7 @@ export function Dialog({ children, onClose, variant = 'content', label }: Dialog
       }}
     >
       {variant !== 'menu' && <button ref={closeRef} className="pp-dialog__close" type="button" onClick={onClose} aria-label="Закрыть окно">
-        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="m1 1 22 22M23 1 1 23" /></svg>
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="m3 3 18 18M21 3 3 21" /></svg>
       </button>}
       <div className="pp-dialog__panel">{children}</div>
     </div>

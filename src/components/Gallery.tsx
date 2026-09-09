@@ -33,16 +33,16 @@ function assetSrcSet(srcSet: string | undefined, basePath: string) {
 
 function FullscreenIcon({ active }: { active: boolean }) {
   return active
-    ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /></svg>
-    : <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" /></svg>;
+    ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3v6H3M15 3v6h6M9 21v-6H3M15 21v-6h6" /></svg>
+    : <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H3v6M15 3h6v6M9 21H3v-6M15 21h6v-6" /></svg>;
 }
 
 function ThumbnailsIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true">
-    <rect className="pp-gallery__tile pp-gallery__tile--top-left" x="4" y="4" width="6" height="6" rx=".6" />
-    <rect className="pp-gallery__tile pp-gallery__tile--top-right" x="14" y="4" width="6" height="6" rx=".6" />
-    <rect className="pp-gallery__tile pp-gallery__tile--bottom-left" x="4" y="14" width="6" height="6" rx=".6" />
-    <rect className="pp-gallery__tile pp-gallery__tile--bottom-right" x="14" y="14" width="6" height="6" rx=".6" />
+    <rect className="pp-gallery__tile pp-gallery__tile--top-left" x="3" y="3" width="7" height="7" rx=".7" />
+    <rect className="pp-gallery__tile pp-gallery__tile--top-right" x="14" y="3" width="7" height="7" rx=".7" />
+    <rect className="pp-gallery__tile pp-gallery__tile--bottom-left" x="3" y="14" width="7" height="7" rx=".7" />
+    <rect className="pp-gallery__tile pp-gallery__tile--bottom-right" x="14" y="14" width="7" height="7" rx=".7" />
   </svg>;
 }
 
@@ -50,8 +50,20 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
   const [index, setIndex] = useState(0);
   const [thumbnailsVisible, setThumbnailsVisible] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [settlingDirection, setSettlingDirection] = useState<-1 | 0 | 1 | null>(null);
   const galleryRef = useRef<HTMLDivElement>(null);
-  const pointerStart = useRef<{ id: number; x: number; y: number } | null>(null);
+  const pointerStart = useRef<{
+    id: number;
+    x: number;
+    y: number;
+    lastX: number;
+    lastTime: number;
+    velocityX: number;
+    horizontal: boolean;
+  } | null>(null);
+  const settlingDirectionRef = useRef<-1 | 0 | 1 | null>(null);
+  const suppressStageClick = useRef(false);
   const total = gallery.images.length;
   const selected = total ? index % total : 0;
   const image = gallery.images[selected];
@@ -62,8 +74,20 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
       ? '(max-width: 720px) 100vw, calc(100vw - 370px)'
       : '(max-width: 720px) 100vw, calc(100vw - 184px)'
     : '(max-width: 720px) 100vw, (max-width: 1100px) calc(100vw - 220px), 1040px';
+  const finishMove = useCallback(() => {
+    const direction = settlingDirectionRef.current;
+    if (direction === null) return;
+    settlingDirectionRef.current = null;
+    if (direction !== 0 && total > 1) setIndex((current) => (current + direction + total) % total);
+    setSettlingDirection(null);
+    setDragOffset(0);
+  }, [total]);
   const move = useCallback((direction: number) => {
-    if (total > 1) setIndex((current) => (current + direction + total) % total);
+    if (total <= 1 || settlingDirectionRef.current !== null) return;
+    const normalizedDirection = direction > 0 ? 1 : -1;
+    settlingDirectionRef.current = normalizedDirection;
+    setDragOffset(0);
+    setSettlingDirection(normalizedDirection);
   }, [total]);
   const toggleFullscreen = useCallback(async () => {
     const fullscreenTarget = galleryRef.current?.closest<HTMLElement>('[role="dialog"]') || galleryRef.current;
@@ -80,7 +104,17 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
   useEffect(() => {
     setIndex(0);
     setThumbnailsVisible(true);
+    pointerStart.current = null;
+    settlingDirectionRef.current = null;
+    setSettlingDirection(null);
+    setDragOffset(0);
   }, [gallery]);
+
+  useEffect(() => {
+    if (settlingDirection === null) return;
+    const fallback = window.setTimeout(finishMove, 460);
+    return () => window.clearTimeout(fallback);
+  }, [finishMove, settlingDirection]);
 
   useEffect(() => {
     const handleFullscreenChange = () => setIsFullscreen(document.fullscreenElement === (galleryRef.current?.closest<HTMLElement>('[role="dialog"]') || galleryRef.current));
@@ -114,9 +148,43 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
   }, [move, toggleFullscreen]);
 
   const beginSwipe = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.pointerType === 'mouse' || (event.target instanceof Element && event.target.closest('button'))) return;
-    pointerStart.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    if (event.pointerType === 'mouse' || settlingDirectionRef.current !== null || (event.target instanceof Element && event.target.closest('button'))) return;
+    const now = performance.now();
+    pointerStart.current = {
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      lastX: event.clientX,
+      lastTime: now,
+      velocityX: 0,
+      horizontal: false,
+    };
+    suppressStageClick.current = false;
     event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const continueSwipe = (event: PointerEvent<HTMLDivElement>) => {
+    const start = pointerStart.current;
+    if (!start || start.id !== event.pointerId) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (!start.horizontal) {
+      if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
+      if (Math.abs(dy) >= Math.abs(dx)) {
+        pointerStart.current = null;
+        return;
+      }
+      start.horizontal = true;
+      suppressStageClick.current = true;
+    }
+    event.preventDefault();
+    const now = performance.now();
+    const elapsed = Math.max(1, now - start.lastTime);
+    const instantVelocity = (event.clientX - start.lastX) / elapsed;
+    start.velocityX = start.velocityX * .68 + instantVelocity * .32;
+    start.lastX = event.clientX;
+    start.lastTime = now;
+    const stageWidth = event.currentTarget.clientWidth || 1;
+    setDragOffset(Math.max(-stageWidth, Math.min(stageWidth, dx)));
   };
   const endSwipe = (event: PointerEvent<HTMLDivElement>) => {
     const start = pointerStart.current;
@@ -124,28 +192,82 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
     if (!start || start.id !== event.pointerId) return;
     const dx = event.clientX - start.x;
     const dy = event.clientY - start.y;
-    if (Math.abs(dx) >= 40 && Math.abs(dx) > Math.abs(dy) * 1.3) move(dx > 0 ? -1 : 1);
+    if (!start.horizontal || total <= 1) {
+      setDragOffset(0);
+      return;
+    }
+    suppressStageClick.current = true;
+    const stageWidth = event.currentTarget.clientWidth || 1;
+    const distanceThreshold = Math.min(96, stageWidth * .18);
+    const shouldMove = Math.abs(dx) >= distanceThreshold || Math.abs(start.velocityX) >= .42;
+    const direction: -1 | 0 | 1 = shouldMove ? (dx > 0 ? -1 : 1) : 0;
+    settlingDirectionRef.current = direction;
+    setSettlingDirection(direction);
   };
+  const cancelSwipe = () => {
+    const wasHorizontal = pointerStart.current?.horizontal;
+    pointerStart.current = null;
+    if (!wasHorizontal) {
+      setDragOffset(0);
+      return;
+    }
+    settlingDirectionRef.current = 0;
+    setSettlingDirection(0);
+  };
+
+  const slideIndexes = total > 1
+    ? [(selected - 1 + total) % total, selected, (selected + 1) % total]
+    : [selected];
+  const trackTransform = total <= 1
+    ? 'translate3d(0, 0, 0)'
+    : settlingDirection === null
+      ? `translate3d(calc(-100% + ${dragOffset}px), 0, 0)`
+      : `translate3d(${-100 * (1 + settlingDirection)}%, 0, 0)`;
 
   if (!image) return <p className="pp-gallery__empty">В этой серии пока нет фотографий.</p>;
 
   return (
     <div ref={galleryRef} className={`pp-gallery ${aspectClass}${thumbnailsVisible ? '' : ' is-thumbnails-hidden'}${isFullscreen ? ' is-fullscreen' : ''}`} role="region" aria-roledescription="карусель" aria-label={gallery.title || 'Фотографии серии'}>
-      <div className="pp-gallery__stage" onPointerDown={beginSwipe} onPointerUp={endSwipe} onPointerCancel={() => { pointerStart.current = null; }}>
+      <div
+        className={`pp-gallery__stage${dragOffset !== 0 && settlingDirection === null ? ' is-dragging' : ''}`}
+        onPointerDown={beginSwipe}
+        onPointerMove={continueSwipe}
+        onPointerUp={endSwipe}
+        onPointerCancel={cancelSwipe}
+        onClick={(event) => {
+          if (!suppressStageClick.current) return;
+          suppressStageClick.current = false;
+          event.stopPropagation();
+        }}
+      >
         <p className="pp-gallery__count" aria-hidden="true">{selected + 1} / {total}</p>
-        <img
-          key={image.src}
-          className="pp-gallery__image"
-          src={assetUrl(image.src, basePath)}
-          srcSet={assetSrcSet(image.srcSet, basePath)}
-          sizes={imageSizes}
-          width={image.width}
-          height={image.height}
-          alt={image.alt}
-          decoding="async"
-          fetchPriority="high"
-          draggable={false}
-        />
+        <div
+          className={`pp-gallery__track${settlingDirection !== null ? ' is-settling' : ''}`}
+          style={{ transform: trackTransform }}
+          onTransitionEnd={(event) => {
+            if (event.target === event.currentTarget && event.propertyName === 'transform') finishMove();
+          }}
+        >
+          {slideIndexes.map((position, slidePosition) => {
+            const item = gallery.images[position];
+            const currentSlide = total <= 1 || slidePosition === 1;
+            return <div className="pp-gallery__slide" key={`${item.src}-${slidePosition}`} aria-hidden={!currentSlide}>
+              <img
+                className="pp-gallery__image"
+                src={assetUrl(item.src, basePath)}
+                srcSet={assetSrcSet(item.srcSet, basePath)}
+                sizes={imageSizes}
+                width={item.width}
+                height={item.height}
+                alt={currentSlide ? item.alt : ''}
+                loading="eager"
+                decoding="async"
+                fetchPriority={currentSlide ? 'high' : 'low'}
+                draggable={false}
+              />
+            </div>;
+          })}
+        </div>
         {total > 1 && <>
           <button className="pp-gallery__arrow pp-gallery__arrow--previous" type="button" onClick={() => move(-1)} aria-label="Предыдущая фотография">
             <svg viewBox="0 0 20 36" aria-hidden="true"><path d="M18 2 2 18l16 16" /></svg>
@@ -172,8 +294,9 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
               width={item.width}
               height={item.height}
               alt=""
-              loading={Math.abs(position - selected) < 6 ? 'eager' : 'lazy'}
+              loading={position === selected ? 'eager' : 'lazy'}
               decoding="async"
+              fetchPriority="low"
               draggable={false}
             />
           </button>)}
