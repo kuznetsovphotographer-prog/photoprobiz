@@ -20,6 +20,13 @@ const methods: { value: ContactMethod; label: string }[] = [
   { value: 'max_messenger', label: 'Max' },
 ];
 const packages: PackageName[] = ['Минимальный', 'Базовый', 'Полный'];
+
+// During prerender Vite's import.meta.env is unavailable, while the production
+// browser bundle receives VITE_LEAD_ENDPOINT from Vite. Read the Node
+// environment as a fallback so both renders produce identical markup.
+const configuredLeadEndpoint = import.meta.env?.VITE_LEAD_ENDPOINT
+  ?? (typeof process !== 'undefined' ? process.env.VITE_LEAD_ENDPOINT : undefined);
+
 /** Accepts pasted +7 / 8 numbers as well as a national number. */
 function nationalDigits(value: string, prefix: string, mask?: string): string {
   let digits = value.replace(/\D/g, '');
@@ -64,7 +71,7 @@ export function LeadForm({ variant = 'modal', packageName, basePath = './', onSu
   const contactKey = inline ? 'phone' : method;
   const rawContact = contacts[contactKey];
   const contact = phoneMode && rawContact ? `+${prefix}${nationalDigits(rawContact, prefix, countryData.mask)}` : rawContact.trim();
-  const remoteDeliveryEnabled = Boolean(import.meta.env?.VITE_LEAD_ENDPOINT?.trim());
+  const remoteDeliveryEnabled = Boolean(configuredLeadEndpoint?.trim());
 
   useEffect(() => { if (packageName) setSelectedPackage(packageName); }, [packageName]);
   useEffect(() => () => controllerRef.current?.abort(), []);
