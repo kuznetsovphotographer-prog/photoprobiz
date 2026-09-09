@@ -35,7 +35,7 @@ jobs:
 
       - name: Build static website
         env:
-          VITE_LEAD_ENDPOINT: https://photoprobiz-lead-form.kuznetsovphotographer.workers.dev/lead
+          VITE_LEAD_ENDPOINT: https://api.photoprobiz.ru/lead
         run: npm run build
 
       - name: Disable Jekyll processing
