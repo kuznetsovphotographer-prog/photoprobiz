@@ -294,7 +294,9 @@ body:has(.pp-dialog) .pp-compact-navigation {
   cursor: pointer;
   transition: color .2s ease, background .2s ease, transform .18s ease;
 }
-.pp-gallery__control:hover { background: rgba(255, 255, 255, .1); color: #fff; }
+@media (hover: hover) and (pointer: fine) {
+  .pp-gallery__control:hover { background: rgba(255, 255, 255, .1); color: #fff; }
+}
 .pp-gallery__control:active { transform: scale(.82); }
 .pp-gallery__control svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
 .pp-gallery__control--fullscreen[aria-pressed="true"] svg { transform: rotate(90deg) scale(.86); }

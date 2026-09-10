@@ -16,7 +16,6 @@ export function MobileNavigation() {
   const navigateToSection = (event: MouseEvent<HTMLAnchorElement>, id: string) => {
     event.preventDefault();
     history.pushState(null, '', `#${id}`);
-    document.dispatchEvent(new Event('pp:close-menu'));
     requestAnimationFrame(() => {
       document.getElementById(id)?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     });
@@ -27,7 +26,9 @@ export function MobileNavigation() {
       <div className="pp-mobile-navigation__surface">
         <div className="pp-mobile-navigation__utilities" aria-label="Быстрые действия">
           <a className="pp-mobile-navigation__book" href="#popup:myorder">
-            <span className="pp-mobile-navigation__book-label">ЗАКАЗАТЬ ФОТОСЕССИЮ</span>
+            <span className="pp-mobile-navigation__book-label">
+              <span>ЗАКАЗАТЬ</span>{' '}<span>ФОТОСЕССИЮ</span>
+            </span>
           </a>
           <a className="pp-navigation-control pp-mobile-navigation__contact" href="#popup:contacts" aria-label="Открыть контакты">
             <PhoneNavigationIcon />

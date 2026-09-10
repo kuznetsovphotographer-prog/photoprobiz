@@ -178,7 +178,15 @@
 @media (max-width: 639px) {
   .pp-mobile-navigation { padding-right: 24px; padding-left: 24px; }
   .pp-mobile-navigation__utilities { left: 24px; }
-  .pp-mobile-navigation__book { font-size: clamp(12.5px, calc(7.35vw - 10.9px), 30.5px); }
+  .pp-mobile-navigation__book {
+    align-items: center;
+    padding-right: 4px;
+    font-size: clamp(12px, 3.6vw, 14px);
+    line-height: 1.08;
+    white-space: normal;
+  }
+  .pp-mobile-navigation__book-label { text-align: left; }
+  .pp-mobile-navigation__book-label > span { display: block; }
 }
 
 @media (max-height: 610px) {

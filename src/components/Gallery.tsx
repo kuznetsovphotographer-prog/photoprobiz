@@ -214,6 +214,11 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
     settlingDirectionRef.current = 0;
     setSettlingDirection(0);
   };
+  const releaseTouchControl = (event: PointerEvent<HTMLButtonElement>) => {
+    if (event.pointerType === 'mouse') return;
+    const control = event.currentTarget;
+    requestAnimationFrame(() => control.blur());
+  };
 
   const slideIndexes = total > 1
     ? [(selected - 1 + total) % total, selected, (selected + 1) % total]
@@ -303,10 +308,10 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
         </div>
       </aside>}
       <div className="pp-gallery__toolbar" aria-label="Управление просмотром">
-        <button className="pp-gallery__control pp-gallery__control--fullscreen" type="button" onClick={() => { void toggleFullscreen(); }} aria-label={isFullscreen ? 'Выйти из полноэкранного режима' : 'Открыть на весь экран'} aria-pressed={isFullscreen}>
+        <button className="pp-gallery__control pp-gallery__control--fullscreen" type="button" onPointerUp={releaseTouchControl} onClick={() => { void toggleFullscreen(); }} aria-label={isFullscreen ? 'Выйти из полноэкранного режима' : 'Открыть на весь экран'} aria-pressed={isFullscreen}>
           <FullscreenIcon active={isFullscreen} />
         </button>
-        {total > 1 && <button className="pp-gallery__control pp-gallery__control--thumbnails" type="button" onClick={() => setThumbnailsVisible((visible) => !visible)} aria-label={thumbnailsVisible ? 'Скрыть миниатюры' : 'Показать миниатюры'} aria-pressed={thumbnailsVisible}>
+        {total > 1 && <button className="pp-gallery__control pp-gallery__control--thumbnails" type="button" onPointerUp={releaseTouchControl} onClick={() => setThumbnailsVisible((visible) => !visible)} aria-label={thumbnailsVisible ? 'Скрыть миниатюры' : 'Показать миниатюры'} aria-pressed={thumbnailsVisible}>
           <ThumbnailsIcon />
         </button>}
       </div>

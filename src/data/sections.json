@@ -3616,7 +3616,7 @@
                   "bytes": 198936
                 }
               ],
-              "sizes": "(max-width:479px) 90vw, (max-width:639px) 355px, (max-width:959px) 480px, (max-width:1199px) 348px, 341px"
+              "sizes": "(max-width:479px) 90vw, (max-width:639px) 355px, (max-width:959px) 600px, (max-width:1199px) 348px, 341px"
             },
             "children": []
           }

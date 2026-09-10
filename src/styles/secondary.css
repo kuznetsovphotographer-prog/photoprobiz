@@ -301,6 +301,19 @@
   .section-office-content .n203 { top: 2535px !important; }
   .section-office-content .n189 { top: 2565px !important; }
   .section-office-content .n187 { top: 2801px !important; }
+
+  /* Match both studio portraits to the same centered 600px tablet column. */
+  .section-studio-content .n378,
+  .section-studio-content .n379 {
+    width: 600px !important;
+    height: 600px !important;
+  }
+  .section-studio-content .n378 { left: calc(50% - 300px) !important; }
+  .section-studio-content .canvas { height: 2540px !important; }
+  .section-studio-content .n376 { top: 1609px !important; }
+  .section-studio-content .n356 { top: 1735px !important; }
+  .section-studio-content .n342 { top: 2118px !important; }
+  .section-studio-content .n354 { top: 2426px !important; }
 }
 @media (min-width: 960px) and (max-width: 1199px) {
   .section-hero .canvas { height: max(800px, calc(100svh - 80px)) !important; }
