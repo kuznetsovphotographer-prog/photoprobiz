@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mockLeadAdapter, submitLead, validateLead, type LeadInput } from './lead';
+import { createHttpLeadAdapter, mockLeadAdapter, submitLead, validateLead, type LeadInput } from './lead';
 
 const validLead: LeadInput = {
   name: 'Тест', contact: '+79991234567', contactMethod: 'phone', consent: true, source: 'modal',
@@ -17,12 +17,12 @@ test('a short Russian number cannot pass just because the country prefix adds a 
   assert.deepEqual(validateLead(validLead), {});
 });
 
-test('Telegram and Max validate their respective contact formats', () => {
-  assert.deepEqual(validateLead({ ...validLead, contactMethod: 'telegram', contact: '@sample_user' }), {});
-  assert.deepEqual(validateLead({ ...validLead, contactMethod: 'telegram', contact: 'https://t.me/sample_user' }), {});
-  assert.ok(validateLead({ ...validLead, contactMethod: 'telegram', contact: 'bad name' }).contact);
-  assert.deepEqual(validateLead({ ...validLead, contactMethod: 'max_messenger', contact: 'https://max.ru/u/sample' }), {});
-  assert.ok(validateLead({ ...validLead, contactMethod: 'max_messenger', contact: 'https://example.com' }).contact);
+test('every contact method accepts only a complete phone number', () => {
+  for (const contactMethod of ['phone', 'telegram', 'whatsapp', 'max_messenger'] as const) {
+    assert.deepEqual(validateLead({ ...validLead, contactMethod }), {});
+  }
+  assert.ok(validateLead({ ...validLead, contactMethod: 'telegram', contact: '@sample_user' }).contact);
+  assert.ok(validateLead({ ...validLead, contactMethod: 'max_messenger', contact: 'https://max.ru/u/sample' }).contact);
 });
 
 test('the inline form always validates the phone field even when Telegram is selected', () => {
@@ -56,4 +56,14 @@ test('unmount cancellation aborts the pending mock request', async () => {
   const pending = mockLeadAdapter(validLead, controller.signal);
   controller.abort();
   await assert.rejects(pending, { name: 'AbortError' });
+});
+
+test('HTTP delivery has a bounded timeout instead of waiting forever', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = ((_input: RequestInfo | URL, init?: RequestInit) => new Promise((_resolve, reject) => {
+    init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+  })) as typeof fetch;
+  try {
+    await assert.rejects(createHttpLeadAdapter('https://example.test/lead', 5)(validLead), /долго не отвечает/);
+  } finally { globalThis.fetch = originalFetch; }
 });

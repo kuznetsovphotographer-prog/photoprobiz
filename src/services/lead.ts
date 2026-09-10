@@ -33,23 +33,13 @@ export function validateLead(lead: LeadInput): LeadErrors {
   }
 
   if (!contact) errors.contact = 'Обязательное поле';
-  else if (lead.source === 'inline' || lead.contactMethod === 'phone' || lead.contactMethod === 'whatsapp') {
+  else {
     const length = phoneDigits(contact).length;
     const country = phoneCountries.find((item) => item.iso === lead.phoneCountry);
     const expectedLength = country ? phoneDigits(country.dial).length + (country.mask.match(/0/g)?.length ?? 0) : contact.startsWith('+7') ? 11 : 10;
-    if (length < Math.min(expectedLength, 15)) errors.contact = 'Слишком короткое значение';
+    if (!/^\+?[\d\s().-]+$/.test(contact)) errors.contact = 'Укажите номер телефона';
+    else if (length < Math.min(expectedLength, 15)) errors.contact = 'Слишком короткое значение';
     else if (length > 15) errors.contact = 'Проверьте номер телефона';
-  } else if (lead.contactMethod === 'telegram') {
-    const value = contact.replace(/^https?:\/\/(?:www\.)?(?:t\.me|telegram\.me)\//i, '').replace(/^@/, '');
-    const isPhone = /^\+?[\d\s().-]+$/.test(contact) && phoneDigits(contact).length >= 10 && phoneDigits(contact).length <= 15;
-    if (!isPhone && !/^[a-z][a-z\d_]{4,31}$/i.test(value)) {
-      errors.contact = 'Укажите имя пользователя или номер телефона';
-    }
-  } else {
-    const isPhone = /^\+?[\d\s().-]+$/.test(contact) && phoneDigits(contact).length >= 10 && phoneDigits(contact).length <= 15;
-    if (!isPhone && !/^https?:\/\/(?:www\.)?max\.ru\/\S+$/i.test(contact)) {
-      errors.contact = 'Укажите ссылку на профиль Max или номер телефона';
-    }
   }
   if (!lead.consent) errors.consent = 'Обязательное поле';
   return errors;
@@ -67,17 +57,34 @@ export const mockLeadAdapter: LeadAdapter = (_lead, signal) => new Promise((reso
 });
 
 /** Opt-in future transport. Nothing calls this unless VITE_LEAD_ENDPOINT is configured. */
-export function createHttpLeadAdapter(endpoint: string): LeadAdapter {
+export function createHttpLeadAdapter(endpoint: string, timeoutMs = 12000): LeadAdapter {
   return async (lead, signal) => {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(lead),
-      credentials: 'omit',
-      signal,
-    });
-    if (!response.ok) throw new Error('Не удалось отправить заявку. Попробуйте ещё раз.');
-    return { status: 'success', mode: 'remote' };
+    const controller = new AbortController();
+    let timedOut = false;
+    const abortFromCaller = () => controller.abort(signal?.reason);
+    if (signal?.aborted) abortFromCaller();
+    else signal?.addEventListener('abort', abortFromCaller, { once: true });
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort(new DOMException('Timed out', 'TimeoutError'));
+    }, timeoutMs);
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(lead),
+        credentials: 'omit',
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error('Не удалось отправить заявку. Попробуйте ещё раз.');
+      return { status: 'success', mode: 'remote' };
+    } catch (error) {
+      if (timedOut) throw new Error('Сервер долго не отвечает. Проверьте соединение и попробуйте ещё раз.');
+      throw error;
+    } finally {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', abortFromCaller);
+    }
   };
 }
 

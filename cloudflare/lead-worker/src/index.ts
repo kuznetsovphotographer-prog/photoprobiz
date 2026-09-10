@@ -55,6 +55,7 @@ function parseLead(payload: unknown) {
   const source = text(lead.source, 16);
   const phoneCountry = text(lead.phoneCountry, 8);
   if (!name || !contact || !contactMethods.has(contactMethod) || lead.consent !== true || !sources.has(source)) return null;
+  if (!/^\+\d{10,15}$/.test(contact)) return null;
   if (packageName && !packages.has(packageName)) return null;
   return { name, contact, contactMethod, packageName, source, phoneCountry };
 }

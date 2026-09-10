@@ -288,6 +288,19 @@
 }
 @media (min-width: 640px) and (max-width: 959px) {
   .section-hero .canvas { height: max(870px, calc(100svh - 60px)) !important; }
+
+  /* Keep the stacked office portraits on one 600px tablet grid. */
+  .section-office-content,
+  .section-office-content .canvas { height: 3344px !important; }
+  .section-office-content :is(.n214, .n215) {
+    left: calc(50% - 300px) !important;
+    width: 600px !important;
+    height: 600px !important;
+  }
+  .section-office-content .n205 { top: 2199px !important; }
+  .section-office-content .n203 { top: 2535px !important; }
+  .section-office-content .n189 { top: 2565px !important; }
+  .section-office-content .n187 { top: 2801px !important; }
 }
 @media (min-width: 960px) and (max-width: 1199px) {
   .section-hero .canvas { height: max(800px, calc(100svh - 80px)) !important; }

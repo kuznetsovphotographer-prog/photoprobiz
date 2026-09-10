@@ -10,6 +10,7 @@
 - `www.photoprobiz.ru` перенаправляется GitHub Pages на основной домен.
 - Форма отправляет заявки на `https://api.photoprobiz.ru/lead`.
 - Worker имеет Custom Domain `api.photoprobiz.ru`; прежний маршрут `workers.dev` отключён.
+- Для зоны отключён Encrypted Client Hello (ECH), чтобы российские сети не обрывали TLS-соединение к API формы.
 - Telegram-бот и Cloudflare Secrets подключены, а `https://api.photoprobiz.ru/health` отвечает с `"telegramConfigured": true`.
 
 Схема исключает зависимость формы от `workers.dev`. Окончательно доступность для клиентов из России подтверждается контрольным тестом без VPN на мобильной сети и у домашнего провайдера.
@@ -59,7 +60,15 @@
 
 Проект публикуется GitHub Actions, поэтому вручную создавать `CNAME` в репозитории не требуется: GitHub указывает, что при пользовательском Actions workflow этот файл не создаётся и не нужен.
 
-### 3. Custom Domain для Worker
+### 3. Отключение ECH для доступности API из России
+
+Custom Domain Worker всё равно обслуживается на edge-серверах Cloudflare. На бесплатном тарифе Cloudflare включает Encrypted Client Hello (ECH) по умолчанию. Некоторые российские провайдеры обрывают такие TLS-соединения, поэтому одного переноса с `workers.dev` на `api.<домен>` недостаточно.
+
+В Cloudflare откройте **SSL/TLS → Edge Certificates → Encrypted Client Hello (ECH)** и выключите ECH. Настройка действует на proxied-хосты зоны, включая Custom Domain Worker. Основной сайт с серым облаком продолжает открываться напрямую с GitHub Pages.
+
+После изменения проверьте HTTPS-запись домена через DNS-over-HTTPS: в ответе `api.<домен>` не должно быть параметра `ech=`. Обычные поля `alpn=h3,h2` допустимы.
+
+### 4. Custom Domain для Worker
 
 В `cloudflare/lead-worker/wrangler.jsonc` добавьте перед закрывающей фигурной скобкой:
 
@@ -85,7 +94,7 @@ npm.cmd run deploy
 
 Секреты `TELEGRAM_BOT_TOKEN` и `TELEGRAM_CHAT_ID` уже существуют в Cloudflare и повторно в код или GitHub не добавляются.
 
-### 4. Адрес API в сборке сайта
+### 5. Адрес API в сборке сайта
 
 В `.github/workflows/deploy-pages.yml` замените значение:
 
@@ -111,9 +120,12 @@ VITE_LEAD_ENDPOINT: https://api.<домен>/lead
 4. Проверить открытие страницы благодарности и новую заявку в Telegram.
 5. Открыть браузерную консоль и убедиться, что нет `Failed to fetch`, `CORS` или сетевых ошибок формы.
 
+Дополнительно полезно проверить `https://api.<домен>/health` внешними узлами разных российских операторов. После отключения ECH текущий API получил HTTP 200 из сетей Timeweb, Selectel, Yandex Cloud, МТС и нескольких региональных операторов.
+
 ## Полезные источники
 
 - [Cloudflare: Custom Domains для Workers](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
+- [Cloudflare: Encrypted Client Hello](https://developers.cloudflare.com/ssl/edge-certificates/ech/)
 - [Cloudflare: рекомендации по доменам и маршрутам Workers](https://developers.cloudflare.com/workers/configuration/routing/)
 - [GitHub: настройка Custom Domain для GitHub Pages](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site)
 - [GitHub: HTTPS для GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/securing-your-github-pages-site-with-https)

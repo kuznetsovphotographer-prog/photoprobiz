@@ -54,7 +54,7 @@ export function LeadForm({ variant = 'modal', packageName, basePath = './', onSu
   const inline = variant === 'inline';
   const [name, setName] = useState('');
   const [method, setMethod] = useState<ContactMethod>('phone');
-  const [contacts, setContacts] = useState<Record<ContactMethod, string>>({ phone: '', telegram: '', whatsapp: '', max_messenger: '' });
+  const [phone, setPhone] = useState('');
   const [country, setCountry] = useState('RU');
   const [consent, setConsent] = useState(true);
   const [selectedPackage, setSelectedPackage] = useState<PackageName>(packageName ?? 'Минимальный');
@@ -67,10 +67,7 @@ export function LeadForm({ variant = 'modal', packageName, basePath = './', onSu
   const controllerRef = useRef<AbortController | null>(null);
   const countryData = phoneCountries.find((item) => item.iso === country)!;
   const prefix = countryData.dial.replace(/\D/g, '');
-  const phoneMode = inline || method === 'phone' || method === 'whatsapp';
-  const contactKey = inline ? 'phone' : method;
-  const rawContact = contacts[contactKey];
-  const contact = phoneMode && rawContact ? `+${prefix}${nationalDigits(rawContact, prefix, countryData.mask)}` : rawContact.trim();
+  const contact = phone ? `+${prefix}${nationalDigits(phone, prefix, countryData.mask)}` : '';
   const remoteDeliveryEnabled = Boolean(configuredLeadEndpoint?.trim());
 
   useEffect(() => { if (packageName) setSelectedPackage(packageName); }, [packageName]);
@@ -96,21 +93,21 @@ export function LeadForm({ variant = 'modal', packageName, basePath = './', onSu
 
   const getLead = (): LeadInput => ({
     name, contact, contactMethod: method, consent, source: variant,
-    ...(phoneMode ? { phoneCountry: country } : {}),
+    phoneCountry: country,
     ...(packageName ? { packageName: selectedPackage } : {}),
   });
 
   function updateContact(value: string) {
     let destination = countryData;
     const pastedDigits = value.replace(/\D/g, '');
-    if (phoneMode && value.trim().startsWith('+') && !pastedDigits.startsWith(prefix)) {
+    if (value.trim().startsWith('+') && !pastedDigits.startsWith(prefix)) {
       // Longest calling-code match also handles territories such as +1 (268).
       destination = phoneCountries
         .filter((item) => pastedDigits.startsWith(item.dial.replace(/\D/g, '')))
         .sort((a, b) => b.dial.replace(/\D/g, '').length - a.dial.replace(/\D/g, '').length)[0] ?? countryData;
       setCountry(destination.iso);
     }
-    setContacts((previous) => ({ ...previous, [contactKey]: phoneMode ? formatNational(value, destination.dial.replace(/\D/g, ''), destination.mask) : value }));
+    setPhone(formatNational(value, destination.dial.replace(/\D/g, ''), destination.mask));
     setErrors((previous) => ({ ...previous, contact: undefined }));
     setSubmitError('');
   }
@@ -162,8 +159,10 @@ export function LeadForm({ variant = 'modal', packageName, basePath = './', onSu
         </span>
         <span className="lead-country-chevron" aria-hidden="true" />
         <select aria-label="Код страны" value={country} disabled={pending} onChange={(event) => {
-          setCountry(event.target.value);
-          setContacts((previous) => ({ ...previous, [contactKey]: '' }));
+          const nextCountry = phoneCountries.find((item) => item.iso === event.target.value)!;
+          const currentDigits = nationalDigits(phone, prefix, countryData.mask);
+          setCountry(nextCountry.iso);
+          setPhone(formatNational(currentDigits, nextCountry.dial.replace(/\D/g, ''), nextCountry.mask));
           setErrors((previous) => ({ ...previous, contact: undefined }));
         }}>
           {phoneCountries.map((item) => <option key={item.iso} value={item.iso}>{item.name} {item.dial}</option>)}
@@ -171,7 +170,7 @@ export function LeadForm({ variant = 'modal', packageName, basePath = './', onSu
       </span>
       <span className="lead-phone-prefix" aria-hidden="true">{countryData.dial}</span>
       <input id={`${id}-contact`} name="contact" type="tel" autoComplete="tel-national" inputMode="tel"
-        value={rawContact} onChange={(event) => updateContact(event.target.value)}
+        value={phone} onChange={(event) => updateContact(event.target.value)}
         placeholder={countryData.mask}
         aria-label={inline ? undefined : 'Телефон'} required disabled={pending}
         aria-invalid={Boolean(errors.contact)} aria-describedby={errors.contact ? `${id}-contact-error` : undefined} />
@@ -202,12 +201,7 @@ export function LeadForm({ variant = 'modal', packageName, basePath = './', onSu
               </label>)}</div>
             </fieldset>
             {!inline && <>
-              {phoneMode ? phoneControl : <input className={`lead-input lead-contact-text${errors.contact ? ' lead-control-error' : ''}`} id={`${id}-contact`} name="contact" type="text"
-                value={rawContact} onChange={(event) => updateContact(event.target.value)}
-                placeholder={method === 'telegram' ? 'Имя пользователя или телефон' : 'Cсылка или телефон'}
-                aria-label={method === 'telegram' ? 'Telegram: имя пользователя или телефон' : 'Max: ссылка или телефон'}
-                maxLength={160} autoComplete="off" autoCapitalize="none" spellCheck={false} required disabled={pending}
-                aria-invalid={Boolean(errors.contact)} aria-describedby={errors.contact ? `${id}-contact-error` : undefined} />}
+              {phoneControl}
               {fieldError('contact')}
             </>}
           </div>

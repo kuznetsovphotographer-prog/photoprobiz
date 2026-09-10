@@ -4,16 +4,16 @@
   justify-content: flex-end;
   padding: 0;
   overflow: hidden;
-  background: rgba(0, 0, 0, .12);
+  background: rgba(0, 0, 0, .34);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
 
 .pp-dialog--menu > .pp-dialog__panel {
-  width: min(370px, 100vw);
+  width: clamp(280px, 52vw, 680px);
   height: 100vh;
   height: 100dvh;
-  max-width: none;
+  max-width: calc(100vw - 56px);
   margin: 0;
   background: #0a0a0a;
   box-shadow: -24px 0 70px rgba(0, 0, 0, .18);
@@ -27,6 +27,16 @@
   padding: 88px 28px 26px;
   color: #d6d3d1;
   font-family: TildaSans, Arial, sans-serif;
+}
+
+.pp-dialog--menu > .pp-dialog__close {
+  position: fixed;
+  top: var(--pp-menu-control-top);
+  right: var(--pp-menu-control-right);
+  z-index: 14;
+  width: var(--pp-menu-control-size);
+  height: var(--pp-menu-control-size);
+  color: #fff;
 }
 
 .pp-mobile-navigation__utilities {
@@ -166,8 +176,6 @@
 .pp-mobile-navigation__sections > a:hover .pp-mobile-navigation__arrow { transform: translate(2px, -2px); }
 
 @media (max-width: 639px) {
-  .pp-dialog.pp-dialog--menu { background: #0a0a0a; }
-  .pp-dialog--menu > .pp-dialog__panel { width: 100vw; box-shadow: none; }
   .pp-mobile-navigation { padding-right: 24px; padding-left: 24px; }
   .pp-mobile-navigation__utilities { left: 24px; }
   .pp-mobile-navigation__book { font-size: clamp(12.5px, calc(7.35vw - 10.9px), 30.5px); }
