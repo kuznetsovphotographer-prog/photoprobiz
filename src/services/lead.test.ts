@@ -67,3 +67,15 @@ test('HTTP delivery has a bounded timeout instead of waiting forever', async () 
     await assert.rejects(createHttpLeadAdapter('https://example.test/lead', 5)(validLead), /долго не отвечает/);
   } finally { globalThis.fetch = originalFetch; }
 });
+
+test('HTTP delivery requires explicit confirmation, not just status 200', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    for (const body of [{}, { ok: false }, [{ status: 200 }]]) {
+      globalThis.fetch = async () => new Response(JSON.stringify(body));
+      await assert.rejects(createHttpLeadAdapter('https://example.test/lead')(validLead), /не подтвердил/);
+    }
+    globalThis.fetch = async () => new Response(JSON.stringify({ ok: true }));
+    assert.deepEqual(await createHttpLeadAdapter('https://example.test/lead')(validLead), { status: 'success', mode: 'remote' });
+  } finally { globalThis.fetch = originalFetch; }
+});

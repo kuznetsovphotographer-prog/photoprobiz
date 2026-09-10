@@ -6,6 +6,23 @@
 
 ## Текущая схема
 
+Обновление 10.09.2026: прямой браузерный доступ к Cloudflare API не работает у пользователя через Beeline. Клиентский endpoint заменён на `https://functions.yandexcloud.net/d4e5ur2fo156lrcve6id`. GET по нему — проверка доступности, POST — заявка, OPTIONS — CORS.
+
+```text
+Телефон / компьютер → GitHub Pages (сайт)
+Форма → Yandex Cloud Function → Cloudflare Worker → Telegram
+```
+
+Yandex Function работает с `DELIVERY_MODE=cloudflare-relay`. Она вызывает существующий `https://api.photoprobiz.ru/lead` с сервера; браузер к Cloudflare API больше не обращается. Worker и его Telegram Secrets необходимо сохранить: это действующая часть доставки, а не только резерв.
+
+Причина промежуточного сервера: две прямые отправки из Yandex в Telegram завершились `TELEGRAM_TIMEOUT` за 8 секунд. Проверка IPv4 из той же среды показала таймаут к `api.telegram.org`, при этом `yandex.ru` ответил за 49 мс. Cloudflare доступен из функции; тестовая заявка через него получила HTTP 200 и `ok: true` за 1,45 секунды. Эти результаты не устанавливают причину ограничения Telegram и не гарантируют доступность во всех сетях.
+
+Пользователь подтвердил открытие URL функции через Beeline без VPN. После публикации нужно отдельно подтвердить отправку реальной формы через ту же SIM и получение сообщения. Подробности загрузки функции: `yandex/lead-function/README.md`.
+
+## Прежняя схема и история настройки Cloudflare
+
+Ниже сохранены прежние настройки. Инструкции о прямом обращении браузера к `api.photoprobiz.ru` заменены схемой выше. Отключение ECH и собственный домен не обеспечили доступ через Beeline.
+
 - Основной сайт опубликован по адресу `https://photoprobiz.ru/` через GitHub Pages.
 - `www.photoprobiz.ru` перенаправляется GitHub Pages на основной домен.
 - Форма отправляет заявки на `https://api.photoprobiz.ru/lead`.

@@ -33,9 +33,12 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Test Yandex lead handler
+        run: node --test yandex/lead-function/index.test.cjs
+
       - name: Build static website
         env:
-          VITE_LEAD_ENDPOINT: https://api.photoprobiz.ru/lead
+          VITE_LEAD_ENDPOINT: https://functions.yandexcloud.net/d4e5ur2fo156lrcve6id
         run: npm run build
 
       - name: Disable Jekyll processing

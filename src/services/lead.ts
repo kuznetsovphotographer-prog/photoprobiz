@@ -77,6 +77,8 @@ export function createHttpLeadAdapter(endpoint: string, timeoutMs = 12000): Lead
         signal: controller.signal,
       });
       if (!response.ok) throw new Error('Не удалось отправить заявку. Попробуйте ещё раз.');
+      const result = await response.json();
+      if (result?.ok !== true) throw new Error('Сервер не подтвердил отправку заявки. Попробуйте ещё раз.');
       return { status: 'success', mode: 'remote' };
     } catch (error) {
       if (timedOut) throw new Error('Сервер долго не отвечает. Проверьте соединение и попробуйте ещё раз.');
