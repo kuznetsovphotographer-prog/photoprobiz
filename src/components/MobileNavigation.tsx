@@ -16,6 +16,7 @@ export function MobileNavigation() {
   const navigateToSection = (event: MouseEvent<HTMLAnchorElement>, id: string) => {
     event.preventDefault();
     history.pushState(null, '', `#${id}`);
+    document.dispatchEvent(new Event('pp:close-menu'));
     requestAnimationFrame(() => {
       document.getElementById(id)?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     });
