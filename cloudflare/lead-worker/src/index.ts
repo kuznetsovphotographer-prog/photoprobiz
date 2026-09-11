@@ -18,6 +18,7 @@ interface Env {
   TELEGRAM_BOT_TOKEN?: string;
   TELEGRAM_CHAT_ID?: string;
   RELAY_TOKEN?: string;
+  ADMIN_BASE_URL?: string;
 }
 
 function corsHeaders(request: Request): Record<string, string> | null {
@@ -76,11 +77,26 @@ function sameSecret(actual: string | null, expected: string | undefined) {
   return difference === 0;
 }
 
-async function sendTelegramMessage(env: Env, message: string) {
+function adminLeadUrl(env: Env, submissionId: string) {
+  if (!env.ADMIN_BASE_URL) return null;
+  try {
+    const url = new URL(env.ADMIN_BASE_URL);
+    if (url.protocol !== 'https:' || url.hostname !== 'functions.yandexcloud.net') return null;
+    url.searchParams.set('admin', '1');
+    url.searchParams.set('lead', submissionId);
+    return url.toString();
+  } catch { return null; }
+}
+
+async function sendTelegramMessage(env: Env, message: string, buttonUrl: string | null) {
+  const body: Record<string, unknown> = { chat_id: env.TELEGRAM_CHAT_ID, text: message };
+  if (buttonUrl) {
+    body.reply_markup = { inline_keyboard: [[{ text: 'Открыть заявку', url: buttonUrl }]] };
+  }
   const response = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text: message }),
+    body: JSON.stringify(body),
   });
   if (!response.ok) {
     console.error('Telegram request failed.', { status: response.status });
@@ -98,6 +114,7 @@ export default {
         service: 'photoprobiz-lead-form',
         telegramConfigured: Boolean(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID),
         relayConfigured: Boolean(env.RELAY_TOKEN),
+        adminLinkConfigured: Boolean(env.ADMIN_BASE_URL),
       });
     }
 
@@ -127,7 +144,7 @@ export default {
     }
 
     try {
-      await sendTelegramMessage(env, notificationMessage(notification));
+      await sendTelegramMessage(env, notificationMessage(notification), adminLeadUrl(env, notification.submissionId));
       return json({ ok: true }, 200, cors);
     } catch {
       return json({ error: 'Could not deliver the lead.' }, 502, cors);

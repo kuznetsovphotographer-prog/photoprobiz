@@ -1,6 +1,13 @@
 'use strict';
 
 const { createYdbStore } = require('./storage.js');
+const { adminPage } = require('./admin-page.js');
+const {
+  configured: adminConfigured,
+  createSession,
+  isAuthorized,
+  passwordMatches,
+} = require('./admin-auth.js');
 
 const allowedOrigins = new Set([
   'https://photoprobiz.ru', 'https://www.photoprobiz.ru',
@@ -14,6 +21,7 @@ const packages = new Set(['Минимальный', 'Базовый', 'Полн�
 const formIds = new Set(['homepage-inline', 'modal-general', 'modal-package-minimal', 'modal-package-base', 'modal-package-full']);
 const CONSENT_VERSION = '2026-09-11';
 const MAX_BODY_BYTES = 8192;
+const ADMIN_STATUSES = new Set(['new', 'contacted', 'closed']);
 
 function parseLead(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -57,11 +65,60 @@ function safeYdbDiagnostic(error) {
   };
 }
 
+function queryParams(event) {
+  if (event?.queryStringParameters && typeof event.queryStringParameters === 'object') {
+    return event.queryStringParameters;
+  }
+  try { return Object.fromEntries(new URL(event?.url || '/', 'https://functions.yandexcloud.net').searchParams); } catch { return {}; }
+}
+
+function parseJsonBody(event, maxBytes = MAX_BODY_BYTES) {
+  if (typeof event?.body !== 'string') return null;
+  if (Buffer.byteLength(event.body) > maxBytes * (event.isBase64Encoded ? 2 : 1)) return null;
+  const raw = event.isBase64Encoded ? Buffer.from(event.body, 'base64').toString('utf8') : event.body;
+  if (Buffer.byteLength(raw) > maxBytes) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+function iso(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toISOString() : '';
+}
+
+function publicLead(row) {
+  return {
+    submissionId: String(row?.submission_id || ''),
+    serverReceivedAt: iso(row?.server_received_at),
+    consentAcceptedAt: iso(row?.consent_accepted_at),
+    consentVersion: String(row?.consent_version || ''),
+    formId: String(row?.form_id || ''),
+    source: String(row?.source || ''),
+    siteHost: String(row?.site_host || ''),
+    name: String(row?.name || ''),
+    phone: String(row?.phone || ''),
+    contactMethod: String(row?.contact_method || ''),
+    packageName: String(row?.package_name || ''),
+    phoneCountry: String(row?.phone_country || ''),
+    status: ADMIN_STATUSES.has(row?.status) ? row.status : 'new',
+    expiresAt: iso(row?.expires_at),
+  };
+}
+
+function decodeCursor(value) {
+  if (!value || typeof value !== 'string' || value.length > 300) return undefined;
+  try {
+    const cursor = JSON.parse(Buffer.from(value, 'base64url').toString('utf8'));
+    if (!Number.isFinite(Date.parse(cursor.receivedAt)) || !/^[A-Za-z0-9-]{16,80}$/.test(cursor.submissionId)) return undefined;
+    return cursor;
+  } catch { return undefined; }
+}
+
 function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegramTimeoutMs = 8000, leadStore } = {}) {
   const store = leadStore || createYdbStore({ env });
   return async function handler(event, context = {}) {
     const relayMode = env.DELIVERY_MODE === 'cloudflare-relay';
     const headers = Object.fromEntries(Object.entries(event?.headers || {}).map(([key, value]) => [key.toLowerCase(), value]));
+    const params = queryParams(event);
     const origin = headers.origin;
     const cors = allowedOrigins.has(origin) ? {
       'Access-Control-Allow-Origin': origin,
@@ -75,10 +132,95 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
       isBase64Encoded: false,
       body: statusCode === 204 ? '' : JSON.stringify(body),
     });
+
+    const adminReply = (statusCode, body, extraHeaders = {}) => ({
+      statusCode,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store, max-age=0',
+        Pragma: 'no-cache',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Referrer-Policy': 'no-referrer',
+        ...extraHeaders,
+      },
+      isBase64Encoded: false,
+      body: typeof body === 'string' ? body : JSON.stringify(body),
+    });
+
+    if (params.admin === '1' && event?.httpMethod === 'GET') {
+      return adminReply(200, adminPage(), {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src data:; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+      });
+    }
+
+    if (params.admin_api) {
+      const adminBaseOrigin = (() => { try { return new URL(env.ADMIN_BASE_URL).origin; } catch { return ''; } })();
+      if (event?.httpMethod === 'POST' && (!adminBaseOrigin || origin !== adminBaseOrigin)) {
+        return adminReply(403, { error: 'Request origin is not allowed.' });
+      }
+      if (!adminConfigured(env)) return adminReply(503, { error: 'Admin access is not configured.' });
+      if (params.admin_api === 'login' && event?.httpMethod === 'POST') {
+        const payload = parseJsonBody(event, 2048);
+        if (!payload || typeof payload.password !== 'string' || payload.password.length > 200
+          || !passwordMatches(payload.password, env.ADMIN_PASSWORD_SCRYPT)) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          return adminReply(401, { error: 'Invalid credentials.' });
+        }
+        const token = createSession(env.ADMIN_SESSION_SECRET.trim());
+        return adminReply(200, { ok: true, session: token });
+      }
+      if (params.admin_api === 'logout' && event?.httpMethod === 'POST') {
+        return adminReply(200, { ok: true });
+      }
+      if (params.admin_api === 'session' && event?.httpMethod === 'GET') {
+        return adminReply(200, { authenticated: isAuthorized(headers, env) });
+      }
+      if (!isAuthorized(headers, env)) return adminReply(401, { error: 'Authentication required.' });
+      if (params.admin_api === 'leads' && event?.httpMethod === 'GET') {
+        try {
+          const result = await store.list(context?.token?.access_token, {
+            limit: Math.min(Number(params.limit) || 50, 100),
+            cursor: decodeCursor(params.cursor),
+          });
+          return adminReply(200, { leads: result.rows.map(publicLead), hasMore: result.hasMore });
+        } catch (error) {
+          console.error('YDB_ADMIN_OPERATION_FAILED', safeYdbDiagnostic(error));
+          return adminReply(502, { error: 'Could not load leads.' });
+        }
+      }
+      if (params.admin_api === 'lead' && event?.httpMethod === 'GET') {
+        if (!/^[A-Za-z0-9-]{16,80}$/.test(params.id || '')) return adminReply(400, { error: 'Invalid lead ID.' });
+        try {
+          const row = await store.get(params.id, context?.token?.access_token);
+          return row ? adminReply(200, { lead: publicLead(row) }) : adminReply(404, { error: 'Lead not found.' });
+        } catch (error) {
+          console.error('YDB_ADMIN_OPERATION_FAILED', safeYdbDiagnostic(error));
+          return adminReply(502, { error: 'Could not load lead.' });
+        }
+      }
+      if (params.admin_api === 'status' && event?.httpMethod === 'POST') {
+        const payload = parseJsonBody(event, 2048);
+        if (!payload || !/^[A-Za-z0-9-]{16,80}$/.test(payload.submissionId || '') || !ADMIN_STATUSES.has(payload.status)) {
+          return adminReply(400, { error: 'Invalid status update.' });
+        }
+        try {
+          await store.updateStatus(payload.submissionId, payload.status, context?.token?.access_token);
+          return adminReply(200, { ok: true });
+        } catch (error) {
+          console.error('YDB_ADMIN_OPERATION_FAILED', safeYdbDiagnostic(error));
+          return adminReply(502, { error: 'Could not update status.' });
+        }
+      }
+      return adminReply(404, { error: 'Admin endpoint not found.' });
+    }
+
     // The direct Yandex invocation URL is both the GET health check and POST endpoint.
     if (event?.httpMethod === 'GET') return reply(200, {
       ok: true, service: 'photoprobiz-leads', provider: 'yandex-cloud',
       storage: 'ydb', databaseConfigured: store.databaseConfigured(),
+      adminConfigured: adminConfigured(env),
       deliveryMode: relayMode ? 'cloudflare-relay' : 'telegram',
       telegramConfigured: Boolean(env.TELEGRAM_BOT_TOKEN?.trim() && env.TELEGRAM_CHAT_ID?.trim()),
     });

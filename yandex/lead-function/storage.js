@@ -67,6 +67,25 @@ UPSERT INTO ${CONSENT_TABLE} (
   $form_id, $source, $site_host, $name, $phone, $consent_expires_at
 );`;
 
+const LEAD_SELECT_COLUMNS = `
+  submission_id, server_received_at, consent_accepted_at, consent_version,
+  form_id, source, site_host, name, phone, contact_method, package_name,
+  phone_country, status, expires_at`;
+
+const GET_LEAD = `
+DECLARE $submission_id AS Utf8;
+SELECT ${LEAD_SELECT_COLUMNS}
+FROM ${LEADS_TABLE}
+WHERE submission_id = $submission_id
+LIMIT 1;`;
+
+const UPDATE_LEAD_STATUS = `
+DECLARE $submission_id AS Utf8;
+DECLARE $status AS Utf8;
+UPDATE ${LEADS_TABLE}
+SET status = $status
+WHERE submission_id = $submission_id;`;
+
 function addUtcYears(value, years) {
   const result = new Date(value);
   result.setUTCFullYear(result.getUTCFullYear() + years);
@@ -221,14 +240,90 @@ function createYdbStore({ env = process.env, sdk } = {}) {
     }
   }
 
-  return { databaseConfigured, save };
+  function nativeRows(ydb, result) {
+    const resultSet = result?.resultSets?.[0];
+    if (!resultSet) return [];
+    return ydb.TypedData.createNativeObjects(resultSet).map((row) => ({ ...row }));
+  }
+
+  async function list(accessToken, { limit = 50, cursor } = {}) {
+    const ydb = sdk || require('ydb-sdk');
+    const activeDriver = await getDriver(accessToken);
+    await ensureSchema(activeDriver);
+    const safeLimit = Math.max(1, Math.min(Number(limit) || 50, 100));
+    const hasCursor = Boolean(cursor?.receivedAt && cursor?.submissionId);
+    const queryText = `
+DECLARE $has_cursor AS Bool;
+DECLARE $before_at AS Timestamp;
+DECLARE $before_id AS Utf8;
+SELECT ${LEAD_SELECT_COLUMNS}
+FROM ${LEADS_TABLE}
+WHERE NOT $has_cursor
+   OR server_received_at < $before_at
+   OR (server_received_at = $before_at AND submission_id < $before_id)
+ORDER BY server_received_at DESC, submission_id DESC
+LIMIT ${safeLimit + 1};`;
+    try {
+      return await activeDriver.tableClient.withSessionRetry(async (session) => {
+        const query = await session.prepareQuery(queryText);
+        const result = await session.executeQuery(query, {
+          '$has_cursor': ydb.TypedValues.bool(hasCursor),
+          '$before_at': ydb.TypedValues.timestamp(hasCursor ? new Date(cursor.receivedAt) : new Date(0)),
+          '$before_id': ydb.TypedValues.utf8(hasCursor ? cursor.submissionId : ''),
+        });
+        const rows = nativeRows(ydb, result);
+        return { rows: rows.slice(0, safeLimit), hasMore: rows.length > safeLimit };
+      }, 10000);
+    } catch (error) {
+      throw stageError(error, 'read');
+    }
+  }
+
+  async function get(submissionId, accessToken) {
+    const ydb = sdk || require('ydb-sdk');
+    const activeDriver = await getDriver(accessToken);
+    await ensureSchema(activeDriver);
+    try {
+      return await activeDriver.tableClient.withSessionRetry(async (session) => {
+        const query = await session.prepareQuery(GET_LEAD);
+        const result = await session.executeQuery(query, {
+          '$submission_id': ydb.TypedValues.utf8(submissionId),
+        });
+        return nativeRows(ydb, result)[0] || null;
+      }, 10000);
+    } catch (error) {
+      throw stageError(error, 'read');
+    }
+  }
+
+  async function updateStatus(submissionId, status, accessToken) {
+    const ydb = sdk || require('ydb-sdk');
+    const activeDriver = await getDriver(accessToken);
+    await ensureSchema(activeDriver);
+    try {
+      await activeDriver.tableClient.withSessionRetry(async (session) => {
+        const query = await session.prepareQuery(UPDATE_LEAD_STATUS);
+        await session.executeQuery(query, {
+          '$submission_id': ydb.TypedValues.utf8(submissionId),
+          '$status': ydb.TypedValues.utf8(status),
+        });
+      }, 10000);
+    } catch (error) {
+      throw stageError(error, 'write');
+    }
+  }
+
+  return { databaseConfigured, get, list, save, updateStatus };
 }
 
 module.exports = {
   CONSENT_COLUMNS,
   CONSENT_TABLE,
+  GET_LEAD,
   LEADS_COLUMNS,
   LEADS_TABLE,
+  LEAD_SELECT_COLUMNS,
+  UPDATE_LEAD_STATUS,
   UPSERT_LEAD,
   addUtcYears,
   createYdbStore,

@@ -1,5 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { randomBytes, scryptSync } = require('node:crypto');
 const { createHandler } = require('./index.js');
 const { CONSENT_COLUMNS, CONSENT_TABLE, LEADS_COLUMNS, LEADS_TABLE, UPSERT_LEAD, createYdbStore, storageRecord } = require('./storage.js');
 
@@ -18,6 +19,12 @@ const saved = () => ({ databaseConfigured: () => true, save: async () => {} });
 const handler = (options = {}) => createHandler({ env, leadStore: saved(), ...options });
 const context = { token: { access_token: 'test-function-iam-token' } };
 
+function passwordHash(password) {
+  const salt = randomBytes(16);
+  const hash = scryptSync(password, salt, 32, { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 });
+  return `scrypt$16384$8$1$${salt.toString('base64url')}$${hash.toString('base64url')}`;
+}
+
 test('health works without connecting and exposes only configuration state', async () => {
   const result = await handler()({ httpMethod: 'GET' });
   const body = JSON.parse(result.body);
@@ -26,6 +33,82 @@ test('health works without connecting and exposes only configuration state', asy
   assert.equal(body.databaseConfigured, true);
   assert.equal(body.telegramConfigured, true);
   assert.ok(!result.body.includes('test-token'));
+});
+
+test('admin page is public shell but lead data requires a signed session', async () => {
+  const adminEnv = {
+    ...env,
+    ADMIN_BASE_URL: 'https://functions.yandexcloud.net/test-function-id',
+    ADMIN_PASSWORD_SCRYPT: passwordHash('correct horse battery staple'),
+    ADMIN_SESSION_SECRET: 'test-admin-session-secret-with-at-least-32-characters',
+  };
+  const row = {
+    submission_id: lead.submissionId,
+    server_received_at: new Date('2026-09-11T12:00:00.000Z'),
+    consent_accepted_at: new Date(lead.consentAcceptedAt),
+    consent_version: lead.consentVersion,
+    form_id: lead.formId,
+    source: lead.source,
+    site_host: 'photoprobiz.ru',
+    name: lead.name,
+    phone: lead.contact,
+    contact_method: lead.contactMethod,
+    package_name: '',
+    phone_country: 'RU',
+    status: 'new',
+    expires_at: new Date('2027-09-11T12:00:00.000Z'),
+  };
+  const statusUpdates = [];
+  const leadStore = {
+    databaseConfigured: () => true,
+    list: async (_token, options) => {
+      assert.equal(options.limit, 50);
+      return { rows: [row], hasMore: false };
+    },
+    get: async (id) => id === lead.submissionId ? row : null,
+    updateStatus: async (id, status) => statusUpdates.push({ id, status }),
+  };
+  const instance = createHandler({ env: adminEnv, leadStore });
+  const page = await instance({ httpMethod: 'GET', queryStringParameters: { admin: '1' }, headers: {} }, context);
+  assert.equal(page.statusCode, 200);
+  assert.match(page.headers['Content-Type'], /text\/html/);
+  assert.ok(page.body.includes('личный кабинет'));
+  assert.ok(!page.body.includes(lead.contact));
+
+  const unauthorized = await instance({ httpMethod: 'GET', queryStringParameters: { admin_api: 'leads' }, headers: {} }, context);
+  assert.equal(unauthorized.statusCode, 401);
+
+  const wrong = await instance({
+    httpMethod: 'POST', queryStringParameters: { admin_api: 'login' },
+    headers: { Origin: 'https://functions.yandexcloud.net' }, body: JSON.stringify({ password: 'wrong' }),
+  }, context);
+  assert.equal(wrong.statusCode, 401);
+
+  const loggedIn = await instance({
+    httpMethod: 'POST', queryStringParameters: { admin_api: 'login' },
+    headers: { Origin: 'https://functions.yandexcloud.net' }, body: JSON.stringify({ password: 'correct horse battery staple' }),
+  }, context);
+  assert.equal(loggedIn.statusCode, 200);
+  const session = JSON.parse(loggedIn.body).session;
+  assert.equal(typeof session, 'string');
+  assert.ok(session.length > 40);
+
+  const listed = await instance({
+    httpMethod: 'GET', queryStringParameters: { admin_api: 'leads', limit: '50' }, headers: { 'X-Admin-Session': session },
+  }, context);
+  assert.equal(listed.statusCode, 200);
+  const listedBody = JSON.parse(listed.body);
+  assert.equal(listedBody.leads[0].name, lead.name);
+  assert.equal(listedBody.leads[0].phone, lead.contact);
+  assert.equal(listedBody.leads[0].serverReceivedAt, '2026-09-11T12:00:00.000Z');
+
+  const updated = await instance({
+    httpMethod: 'POST', queryStringParameters: { admin_api: 'status' },
+    headers: { 'X-Admin-Session': session, Origin: 'https://functions.yandexcloud.net' },
+    body: JSON.stringify({ submissionId: lead.submissionId, status: 'contacted' }),
+  }, context);
+  assert.equal(updated.statusCode, 200);
+  assert.deepEqual(statusUpdates, [{ id: lead.submissionId, status: 'contacted' }]);
 });
 
 test('preflight handles case-insensitive headers and allowed origins', async () => {

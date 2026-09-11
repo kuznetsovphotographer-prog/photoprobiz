@@ -7,7 +7,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "node --test index.test.cjs"
+    "test": "node --test *.test.cjs"
   },
   "dependencies": {
     "ydb-sdk": "5.11.1"

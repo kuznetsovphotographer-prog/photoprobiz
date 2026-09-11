@@ -10,6 +10,8 @@ Worker принимает только серверное уведомление
 - `TELEGRAM_CHAT_ID`
 - `RELAY_TOKEN` — общий случайный секрет Worker и Yandex Cloud Function
 
+Несекретная переменная `ADMIN_BASE_URL` задаётся в `wrangler.jsonc`. Worker добавляет к ней `?admin=1&lead=<submissionId>` и прикрепляет к уведомлению Telegram кнопку `Открыть заявку`. Кабинет запрашивает персональные данные напрямую у Yandex Cloud Function только после входа владельца.
+
 Секреты задаются через `wrangler secret put` и не добавляются в `wrangler.jsonc`, Git или документацию.
 
 ```powershell

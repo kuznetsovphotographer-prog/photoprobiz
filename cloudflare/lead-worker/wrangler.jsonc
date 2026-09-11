@@ -8,6 +8,9 @@
     "enabled": true,
     "head_sampling_rate": 1
   },
+  "vars": {
+    "ADMIN_BASE_URL": "https://functions.yandexcloud.net/d4e5ur2fo156lrcve6id"
+  },
   "routes": [
     {
       "pattern": "api.photoprobiz.ru",
