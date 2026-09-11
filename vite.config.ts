@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 
-const directoryRoutes = ['/thankyou', '/cookie', '/biznes-portret', '/korporativnaya-fotosessiya', '/fotosessiya-sotrudnikov-v-ofise', '/delovaya-fotosessiya-dlya-vrachey'];
+const directoryRoutes = ['/thankyou', '/cookie', '/privacy', '/consent', '/biznes-portret', '/korporativnaya-fotosessiya', '/fotosessiya-sotrudnikov-v-ofise', '/delovaya-fotosessiya-dlya-vrachey'];
 
 export default defineConfig({
   base: './',
@@ -33,6 +33,8 @@ export default defineConfig({
       main: resolve('index.html'),
       thankyou: resolve('thankyou/index.html'),
       cookie: resolve('cookie/index.html'),
+      privacy: resolve('privacy/index.html'),
+      consent: resolve('consent/index.html'),
       thankyouAlias: resolve('page132097826.html'),
       cookieAlias: resolve('page135439646.html'),
       notFound: resolve('404.html'),

@@ -1,44 +1,23 @@
-# Заявки photoprobiz → Telegram
+# Обезличенные уведомления photoprobiz → Telegram
 
-Отдельный Cloudflare Worker для заявок с сайта делового фотографа. Он принимает валидную заявку с разрешённых доменов и отправляет её в Telegram. Секреты Telegram хранятся только в Cloudflare Worker Secrets.
+Worker принимает только серверное уведомление от Yandex Cloud Function после успешной записи заявки в YDB. В запросе разрешены четыре поля: `event`, `site`, `submissionId`, `serverReceivedAt`. Имя, телефон, способ связи и сведения о согласии Worker не принимает и в Telegram не отправляет.
 
-## Текущие адреса сайта
+Публичный адрес: `https://api.photoprobiz.ru`; проверка состояния: `https://api.photoprobiz.ru/health`.
 
-- GitHub Pages: `https://kuznetsovphotographer-prog.github.io/photoprobiz/`
-- Будущий основной домен: `https://photoprobiz.ru/`
-- Worker: `https://photoprobiz-lead-form.kuznetsovphotographer.workers.dev/`
-- Проверка состояния: `https://photoprobiz-lead-form.kuznetsovphotographer.workers.dev/health`
+## Секреты
 
-В CORS используется origin без пути `/photoprobiz/`, поскольку браузер передаёт только схему и имя хоста.
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
+- `RELAY_TOKEN` — общий случайный секрет Worker и Yandex Cloud Function
 
-## Проверка и публикация
-
-```powershell
-npm.cmd install
-npm.cmd run types
-npm.cmd run check
-npm.cmd run deploy:dry
-npx.cmd wrangler login
-npm.cmd run deploy
-```
-
-Для текущего развёртывания API-токен Wrangler хранится вне репозитория в `%LOCALAPPDATA%\photoprobiz\cloudflare-api-token.txt`. Перед повторной публикацией загрузите его только в переменную текущего процесса PowerShell:
+Секреты задаются через `wrangler secret put` и не добавляются в `wrangler.jsonc`, Git или документацию.
 
 ```powershell
 $env:CLOUDFLARE_API_TOKEN = Get-Content "$env:LOCALAPPDATA\photoprobiz\cloudflare-api-token.txt" -Raw
+Get-Content "$env:LOCALAPPDATA\photoprobiz\yandex-relay-token.txt" -Raw | npx.cmd wrangler secret put RELAY_TOKEN
+npm.cmd run check
 npm.cmd run deploy
 Remove-Item Env:CLOUDFLARE_API_TOKEN
 ```
 
-Worker уже использует Telegram для доставки заявок. При замене бота или чата обновите соответствующие Cloudflare Secrets:
-
-```powershell
-npx.cmd wrangler secret put TELEGRAM_BOT_TOKEN
-npx.cmd wrangler secret put TELEGRAM_CHAT_ID
-```
-
-Не добавляйте значения секретов в `wrangler.jsonc`, `.env`, GitHub или переписку.
-
-## Формат заявки
-
-`POST /lead` принимает JSON с именем, способом связи, контактом, согласием на обработку данных и источником формы. Неверный JSON, неполные данные и запросы с постороннего origin отклоняются.
+POST `/lead` требует разрешённый `Origin` и заголовок `X-Relay-Token`. Запросы с дополнительными полями отклоняются, поэтому персональные данные нельзя случайно переслать через этот маршрут.

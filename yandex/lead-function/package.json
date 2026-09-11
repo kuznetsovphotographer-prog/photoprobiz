@@ -3,6 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "type": "commonjs",
-  "engines": { "node": ">=22" },
-  "scripts": { "test": "node --test index.test.cjs" }
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test index.test.cjs"
+  },
+  "dependencies": {
+    "ydb-sdk": "5.11.1"
+  }
 }

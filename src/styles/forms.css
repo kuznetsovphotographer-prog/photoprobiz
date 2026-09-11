@@ -47,7 +47,8 @@
 .lead-submit { display: flex; justify-content: center; align-items: center; gap: 10px; width: 100%; min-height: 60px; padding: 12px 20px; color: #1c1917; background: transparent; border: 1px solid #1c1917; border-radius: 0; font-family: inherit; font-size: 16px; font-weight: 600; line-height: 1.2; cursor: pointer; transition: color .2s, background-color .2s, border-color .2s; }
 .lead-submit:hover:not(:disabled), .lead-submit:focus-visible { background: #1c1917; color: #fff; }
 .lead-submit:focus-visible { outline: 2px solid #755a49; outline-offset: 4px; }
-.lead-submit:disabled { cursor: wait; opacity: .65; }
+.lead-submit:disabled { cursor: not-allowed; opacity: .65; }
+.lead-form[aria-busy='true'] .lead-submit { cursor: wait; }
 .lead-gift { text-align: center; font-size: 14px; font-weight: 300; line-height: 1.65; margin: 18px 0 0; }
 .lead-field-error { margin: 5px 0 0; color: #e00000; font-family: inherit; font-size: 13px; line-height: 1.3; }
 .lead-control-error { border-color: #e00000 !important; }

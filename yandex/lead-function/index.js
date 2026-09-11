@@ -1,5 +1,7 @@
 'use strict';
 
+const { createYdbStore } = require('./storage.js');
+
 const allowedOrigins = new Set([
   'https://photoprobiz.ru', 'https://www.photoprobiz.ru',
   'https://kuznetsovphotographer-prog.github.io',
@@ -9,6 +11,8 @@ const allowedOrigins = new Set([
 const methods = { phone: 'Телефон', telegram: 'Telegram', whatsapp: 'WhatsApp', max_messenger: 'Max' };
 const sources = { modal: 'Всплывающая форма', inline: 'Форма на странице' };
 const packages = new Set(['Минимальный', 'Базовый', 'Полный']);
+const formIds = new Set(['homepage-inline', 'modal-general', 'modal-package-minimal', 'modal-package-base', 'modal-package-full']);
+const CONSENT_VERSION = '2026-09-11';
 const MAX_BODY_BYTES = 8192;
 
 function parseLead(value) {
@@ -20,23 +24,42 @@ function parseLead(value) {
   if (!Object.hasOwn(methods, value.contactMethod) || !Object.hasOwn(sources, value.source)) return null;
   if (value.packageName !== undefined && !packages.has(value.packageName)) return null;
   if (value.phoneCountry !== undefined && (typeof value.phoneCountry !== 'string' || !/^[A-Za-z]{2}$/.test(value.phoneCountry))) return null;
-  return { name, contact, contactMethod: value.contactMethod, source: value.source, packageName: value.packageName, phoneCountry: value.phoneCountry };
+  if (value.consentVersion !== CONSENT_VERSION || !formIds.has(value.formId)) return null;
+  if (typeof value.submissionId !== 'string' || !/^[A-Za-z0-9-]{16,80}$/.test(value.submissionId)) return null;
+  if (typeof value.consentAcceptedAt !== 'string' || !Number.isFinite(Date.parse(value.consentAcceptedAt))) return null;
+  return {
+    name, contact, contactMethod: value.contactMethod, source: value.source,
+    packageName: value.packageName, phoneCountry: value.phoneCountry,
+    consentVersion: value.consentVersion, consentAcceptedAt: value.consentAcceptedAt,
+    submissionId: value.submissionId, formId: value.formId,
+  };
 }
 
-function message(lead) {
+function notificationMessage(lead, serverReceivedAt) {
   return [
     'Новая заявка с сайта photoprobiz', '',
-    `Имя: ${lead.name}`, `Контакт: ${lead.contact}`,
-    `Способ связи: ${methods[lead.contactMethod]}`,
-    ...(lead.packageName ? [`Пакет: ${lead.packageName}`] : []),
-    ...(lead.phoneCountry ? [`Страна номера: ${lead.phoneCountry}`] : []),
-    `Форма: ${sources[lead.source]}`,
-    `Время: ${new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}`,
+    `ID заявки: ${lead.submissionId}`,
+    `Получено сервером: ${new Date(serverReceivedAt).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}`,
+    'Имя и телефон сохранены в YDB.',
   ].join('\n');
 }
 
-function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegramTimeoutMs = 8000 } = {}) {
-  return async function handler(event) {
+function safeYdbDiagnostic(error) {
+  const clean = (value, max = 500) => String(value || '')
+    .replace(/\+\d{10,15}/g, '[phone-redacted]')
+    .replace(/[A-Za-z0-9_-]{35,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/g, '[token-redacted]')
+    .slice(0, max);
+  return {
+    stage: clean(error?.ydbStage || 'unknown', 32),
+    name: clean(error?.name || 'Error', 80),
+    code: clean(error?.code || error?.statusCode || '', 80),
+    message: clean(error?.message || 'No error message.'),
+  };
+}
+
+function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegramTimeoutMs = 8000, leadStore } = {}) {
+  const store = leadStore || createYdbStore({ env });
+  return async function handler(event, context = {}) {
     const relayMode = env.DELIVERY_MODE === 'cloudflare-relay';
     const headers = Object.fromEntries(Object.entries(event?.headers || {}).map(([key, value]) => [key.toLowerCase(), value]));
     const origin = headers.origin;
@@ -55,6 +78,7 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
     // The direct Yandex invocation URL is both the GET health check and POST endpoint.
     if (event?.httpMethod === 'GET') return reply(200, {
       ok: true, service: 'photoprobiz-leads', provider: 'yandex-cloud',
+      storage: 'ydb', databaseConfigured: store.databaseConfigured(),
       deliveryMode: relayMode ? 'cloudflare-relay' : 'telegram',
       telegramConfigured: Boolean(env.TELEGRAM_BOT_TOKEN?.trim() && env.TELEGRAM_CHAT_ID?.trim()),
     });
@@ -70,17 +94,43 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
     try { payload = JSON.parse(raw); } catch { return reply(400, { error: 'Invalid JSON.' }); }
     const lead = parseLead(payload);
     if (!lead) return reply(400, { error: 'Invalid lead data.' });
+    const serverReceivedAt = new Date().toISOString();
+    try {
+      await store.save(lead, serverReceivedAt, context?.token?.access_token);
+    } catch (error) {
+      const diagnostic = safeYdbDiagnostic(error);
+      console.error('YDB_OPERATION_FAILED', diagnostic);
+      const stageCodes = {
+        connection: 'DATABASE_CONNECTION_FAILED',
+        schema: 'DATABASE_SCHEMA_FAILED',
+        write: 'DATABASE_WRITE_FAILED',
+      };
+      return reply(error?.code === 'YDB_NOT_CONFIGURED' ? 503 : 502, {
+        error: 'Could not store the lead.',
+        code: error?.code === 'YDB_NOT_CONFIGURED' ? 'DATABASE_NOT_CONFIGURED' : (stageCodes[diagnostic.stage] || 'DATABASE_WRITE_FAILED'),
+      });
+    }
+
     // The browser contacts Yandex only. Existing Cloudflare delivery is called
     // server-to-server because direct Telegram connections time out in this runtime.
     // Do not retry via another route: a timed-out request may already be delivered.
     if (relayMode) {
+      if (!env.RELAY_TOKEN?.trim()) {
+        return reply(503, { error: 'Relay is not configured.', code: 'RELAY_NOT_CONFIGURED' });
+      }
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), telegramTimeoutMs);
       try {
         const response = await fetchImpl('https://api.photoprobiz.ru/lead', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Origin: 'https://photoprobiz.ru' },
-          body: JSON.stringify({ ...lead, consent: true }),
+          headers: {
+            'Content-Type': 'application/json', Origin: 'https://photoprobiz.ru',
+            'X-Relay-Token': env.RELAY_TOKEN?.trim() || '',
+          },
+          body: JSON.stringify({
+            event: 'new_lead', site: 'photoprobiz.ru',
+            submissionId: lead.submissionId, serverReceivedAt,
+          }),
           signal: controller.signal,
         });
         const result = await response.json();
@@ -102,7 +152,7 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
     try {
       const response = await fetchImpl(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: chatId, text: message(lead) }),
+        body: JSON.stringify({ chat_id: chatId, text: notificationMessage(lead, serverReceivedAt) }),
         signal: controller.signal,
       });
       const result = await response.json();

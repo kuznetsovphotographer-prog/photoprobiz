@@ -1,4 +1,5 @@
 import { phoneCountries } from '../data/phoneCountries';
+import { PERSONAL_DATA_CONSENT_VERSION } from '../data/privacy';
 
 export type ContactMethod = 'phone' | 'telegram' | 'whatsapp' | 'max_messenger';
 export type PackageName = 'Минимальный' | 'Базовый' | 'Полный';
@@ -8,6 +9,10 @@ export interface LeadInput {
   contact: string;
   contactMethod: ContactMethod;
   consent: boolean;
+  consentAcceptedAt: string;
+  consentVersion: string;
+  submissionId: string;
+  formId: string;
   packageName?: PackageName;
   source: 'modal' | 'inline';
   phoneCountry?: string;
@@ -41,7 +46,12 @@ export function validateLead(lead: LeadInput): LeadErrors {
     else if (length < Math.min(expectedLength, 15)) errors.contact = 'Слишком короткое значение';
     else if (length > 15) errors.contact = 'Проверьте номер телефона';
   }
-  if (!lead.consent) errors.consent = 'Обязательное поле';
+  const acceptedAt = Date.parse(lead.consentAcceptedAt);
+  if (!lead.consent
+    || lead.consentVersion !== PERSONAL_DATA_CONSENT_VERSION
+    || !Number.isFinite(acceptedAt)
+    || !lead.submissionId
+    || !lead.formId) errors.consent = 'Обязательное поле';
   return errors;
 }
 

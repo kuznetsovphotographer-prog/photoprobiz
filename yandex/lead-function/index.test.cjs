@@ -1,92 +1,203 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { createHandler } = require('./index.js');
-const env = { TELEGRAM_BOT_TOKEN: 'test-token', TELEGRAM_CHAT_ID: 'test-chat' };
-const lead = { name: 'Тест', contact: '+79990000000', contactMethod: 'phone', consent: true, source: 'modal', phoneCountry: 'RU' };
+const { CONSENT_COLUMNS, CONSENT_TABLE, LEADS_COLUMNS, LEADS_TABLE, UPSERT_LEAD, createYdbStore, storageRecord } = require('./storage.js');
+
+const env = {
+  ENDPOINT: 'grpcs://example.test:2135', DATABASE: '/test/database',
+  TELEGRAM_BOT_TOKEN: 'test-token', TELEGRAM_CHAT_ID: 'test-chat', RELAY_TOKEN: 'relay-test-token',
+};
+const lead = {
+  name: 'Тест', contact: '+79990000000', contactMethod: 'phone', consent: true, source: 'modal', phoneCountry: 'RU',
+  consentAcceptedAt: '2026-09-11T10:00:00.000Z', consentVersion: '2026-09-11',
+  submissionId: '019a1234-5678-7000-8000-123456789abc', formId: 'modal-general',
+};
 const event = (payload = lead) => ({ httpMethod: 'POST', headers: { Origin: 'https://photoprobiz.ru', 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
 const success = async () => ({ ok: true, json: async () => ({ ok: true }) });
+const saved = () => ({ databaseConfigured: () => true, save: async () => {} });
+const handler = (options = {}) => createHandler({ env, leadStore: saved(), ...options });
+const context = { token: { access_token: 'test-function-iam-token' } };
 
-test('health works without credentials and does not expose secrets', async () => {
-  const result = await createHandler({ env })({ httpMethod: 'GET' });
+test('health works without connecting and exposes only configuration state', async () => {
+  const result = await handler()({ httpMethod: 'GET' });
+  const body = JSON.parse(result.body);
   assert.equal(result.statusCode, 200);
-  assert.equal(JSON.parse(result.body).telegramConfigured, true);
+  assert.equal(body.storage, 'ydb');
+  assert.equal(body.databaseConfigured, true);
+  assert.equal(body.telegramConfigured, true);
   assert.ok(!result.body.includes('test-token'));
 });
+
 test('preflight handles case-insensitive headers and allowed origins', async () => {
-  const result = await createHandler()({ ...event(), httpMethod: 'OPTIONS' });
+  const result = await handler()({ ...event(), httpMethod: 'OPTIONS' });
   assert.equal(result.statusCode, 204);
   assert.equal(result.headers['Access-Control-Allow-Origin'], 'https://photoprobiz.ru');
 });
-test('untrusted and missing origins cannot submit', async () => {
-  const handler = createHandler({ env, fetchImpl: () => assert.fail('must not send') });
+
+test('untrusted and missing origins cannot submit or write', async () => {
+  const leadStore = { databaseConfigured: () => true, save: () => assert.fail('must not store') };
+  const instance = createHandler({ env, leadStore, fetchImpl: () => assert.fail('must not send') });
   for (const origin of [undefined, 'https://example.org']) {
-    const result = await handler({ ...event(), headers: { origin } });
+    const result = await instance({ ...event(), headers: { origin } });
     assert.equal(result.statusCode, 403);
     assert.equal(result.headers['Access-Control-Allow-Origin'], undefined);
   }
 });
-test('all form sources, messengers and packages preserve phone and message fields', async () => {
+
+test('all forms and contact choices are stored before an anonymous Telegram notification', async () => {
   for (const source of ['inline', 'modal']) for (const contactMethod of ['phone', 'telegram', 'whatsapp', 'max_messenger']) for (const packageName of [undefined, 'Минимальный', 'Базовый', 'Полный']) {
-    const handler = createHandler({ env, fetchImpl: async (url, options) => {
+    const order = [];
+    const leadStore = { databaseConfigured: () => true, save: async (stored, _receivedAt, accessToken) => {
+      order.push('store');
+      assert.equal(stored.contact, lead.contact);
+      assert.equal(accessToken, context.token.access_token);
+    } };
+    const instance = createHandler({ env, leadStore, fetchImpl: async (url, options) => {
+      order.push('notify');
       assert.equal(url, 'https://api.telegram.org/bottest-token/sendMessage');
       const body = JSON.parse(options.body);
       assert.equal(body.chat_id, env.TELEGRAM_CHAT_ID);
-      assert.ok(body.text.includes(lead.contact));
-      if (packageName) assert.ok(body.text.includes(packageName));
+      assert.ok(body.text.includes(lead.submissionId));
+      assert.ok(!body.text.includes(lead.name));
+      assert.ok(!body.text.includes(lead.contact));
       return success();
     } });
-    assert.equal((await handler(event({ ...lead, source, contactMethod, packageName }))).statusCode, 200);
+    assert.equal((await instance(event({ ...lead, source, contactMethod, packageName }), context)).statusCode, 200);
+    assert.deepEqual(order, ['store', 'notify']);
   }
 });
-test('invalid lead data does not reach Telegram', async () => {
-  const handler = createHandler({ env, fetchImpl: () => assert.fail('must not send') });
-  for (const patch of [{ consent: false }, { contact: '@username' }, { contactMethod: 'toString' }, { name: '' }, { name: 'Тест\nПодмена' }, { source: 'unknown' }, { packageName: 'other' }]) assert.equal((await handler(event({ ...lead, ...patch }))).statusCode, 400);
+
+test('invalid lead data does not reach YDB or Telegram', async () => {
+  const leadStore = { databaseConfigured: () => true, save: () => assert.fail('must not store') };
+  const instance = createHandler({ env, leadStore, fetchImpl: () => assert.fail('must not send') });
+  for (const patch of [
+    { consent: false }, { contact: '@username' }, { contactMethod: 'toString' }, { name: '' },
+    { name: 'Тест\nПодмена' }, { source: 'unknown' }, { packageName: 'other' },
+    { consentAcceptedAt: 'not-a-date' }, { consentVersion: 'legacy' }, { submissionId: '' }, { formId: 'unknown' },
+  ]) assert.equal((await instance(event({ ...lead, ...patch }))).statusCode, 400);
 });
+
 test('rejects malformed JSON, large payload, unsupported media and method', async () => {
-  const handler = createHandler();
-  assert.equal((await handler({ ...event(), body: '{' })).statusCode, 400);
-  assert.equal((await handler({ ...event(), body: 'x'.repeat(9000) })).statusCode, 413);
-  assert.equal((await handler({ ...event(), headers: { origin: 'https://photoprobiz.ru', 'content-type': 'text/plain' } })).statusCode, 415);
-  assert.equal((await handler({ ...event(), httpMethod: 'DELETE' })).statusCode, 405);
+  const instance = handler();
+  assert.equal((await instance({ ...event(), body: '{' })).statusCode, 400);
+  assert.equal((await instance({ ...event(), body: 'x'.repeat(9000) })).statusCode, 413);
+  assert.equal((await instance({ ...event(), headers: { origin: 'https://photoprobiz.ru', 'content-type': 'text/plain' } })).statusCode, 415);
+  assert.equal((await instance({ ...event(), httpMethod: 'DELETE' })).statusCode, 405);
 });
+
 test('decodes base64 Yandex events', async () => {
-  const result = await createHandler({ env, fetchImpl: success })({ ...event(), isBase64Encoded: true, body: Buffer.from(JSON.stringify(lead)).toString('base64') });
+  const result = await handler({ fetchImpl: success })({ ...event(), isBase64Encoded: true, body: Buffer.from(JSON.stringify(lead)).toString('base64') });
   assert.equal(result.statusCode, 200);
 });
-test('missing secrets return an explicit failure', async () => {
-  assert.equal((await createHandler({ env: {} })(event())).statusCode, 503);
+
+test('a storage failure prevents notification and success', async () => {
+  const leadStore = { databaseConfigured: () => true, save: async () => { throw Error('private database error'); } };
+  const result = await createHandler({ env, leadStore, fetchImpl: () => assert.fail('must not send') })(event(), context);
+  assert.equal(result.statusCode, 502);
+  assert.equal(JSON.parse(result.body).code, 'DATABASE_WRITE_FAILED');
+  assert.ok(!result.body.includes('private database error'));
 });
-test('Telegram HTTP errors and API rejection never report success', async () => {
-  for (const response of [{ ok: false, json: async () => ({ ok: false }) }, { ok: true, json: async () => ({ ok: false }) }, { ok: true, json: async () => { throw Error('invalid response'); } }]) {
-    const result = await createHandler({ env, fetchImpl: async () => response })(event());
-    assert.equal(result.statusCode, 502);
-  }
-});
-test('network failures and timeouts return errors without disclosing secrets', async () => {
-  const failed = await createHandler({ env, fetchImpl: async () => { throw Error(env.TELEGRAM_BOT_TOKEN); } })(event());
-  assert.equal(failed.statusCode, 502);
-  assert.ok(!failed.body.includes(env.TELEGRAM_BOT_TOKEN));
-  const timedOut = await createHandler({ env, telegramTimeoutMs: 5, fetchImpl: (_, { signal }) => new Promise((_, reject) => signal.addEventListener('abort', () => reject(Error('aborted')), { once: true })) })(event());
-  assert.equal(timedOut.statusCode, 504);
-});
-test('relay sends validated lead only to existing backend, without Telegram secrets', async () => {
-  let calls = 0;
-  const handler = createHandler({ env: { ...env, DELIVERY_MODE: 'cloudflare-relay' }, fetchImpl: async (url, options) => {
-    calls++;
+
+test('relay receives only anonymous metadata and a shared secret after storage', async () => {
+  const order = [];
+  const leadStore = { databaseConfigured: () => true, save: async () => { order.push('store'); } };
+  const instance = createHandler({ env: { ...env, DELIVERY_MODE: 'cloudflare-relay' }, leadStore, fetchImpl: async (url, options) => {
+    order.push('relay');
     assert.equal(url, 'https://api.photoprobiz.ru/lead');
     assert.equal(options.headers.Origin, 'https://photoprobiz.ru');
-    assert.deepEqual(JSON.parse(options.body), lead);
-    assert.ok(!JSON.stringify(options).includes(env.TELEGRAM_BOT_TOKEN));
+    assert.equal(options.headers['X-Relay-Token'], env.RELAY_TOKEN);
+    const relayed = JSON.parse(options.body);
+    assert.deepEqual(Object.keys(relayed).sort(), ['event', 'serverReceivedAt', 'site', 'submissionId']);
+    assert.equal(relayed.event, 'new_lead');
+    assert.equal(relayed.site, 'photoprobiz.ru');
+    assert.equal(relayed.submissionId, lead.submissionId);
+    assert.ok(!JSON.stringify(options).includes(lead.name));
+    assert.ok(!JSON.stringify(options).includes(lead.contact));
+    assert.ok(!options.body.includes(env.TELEGRAM_BOT_TOKEN));
     return success();
   } });
-  assert.equal((await handler(event())).statusCode, 200);
-  assert.equal(calls, 1);
+  assert.equal((await instance(event(), context)).statusCode, 200);
+  assert.deepEqual(order, ['store', 'relay']);
 });
-test('relay does not falsely succeed or retry on upstream failure', async () => {
+
+test('missing relay secret and delivery failures are explicit', async () => {
+  const withoutSecret = await createHandler({ env: { DELIVERY_MODE: 'cloudflare-relay' }, leadStore: saved() })(event(), context);
+  assert.equal(withoutSecret.statusCode, 503);
+  assert.equal(JSON.parse(withoutSecret.body).code, 'RELAY_NOT_CONFIGURED');
   for (const fetchImpl of [async () => ({ ok: true, json: async () => ({}) }), async () => { throw Error('network'); }]) {
     let calls = 0;
-    const handler = createHandler({ env: { DELIVERY_MODE: 'cloudflare-relay' }, fetchImpl: (...args) => { calls++; return fetchImpl(...args); } });
-    assert.equal((await handler(event())).statusCode, 502);
+    const instance = handler({ env: { ...env, DELIVERY_MODE: 'cloudflare-relay' }, fetchImpl: (...args) => { calls += 1; return fetchImpl(...args); } });
+    assert.equal((await instance(event(), context)).statusCode, 502);
     assert.equal(calls, 1);
   }
+});
+
+test('network timeouts return errors without disclosing secrets', async () => {
+  const timedOut = await handler({ telegramTimeoutMs: 5, fetchImpl: (_, { signal }) => new Promise((_, reject) => signal.addEventListener('abort', () => reject(Error('aborted')), { once: true })) })(event(), context);
+  assert.equal(timedOut.statusCode, 504);
+  assert.ok(!timedOut.body.includes(env.TELEGRAM_BOT_TOKEN));
+});
+
+test('storage records use separate one-year and three-year expirations', () => {
+  const record = storageRecord(lead, '2026-09-11T12:00:00.000Z');
+  assert.equal(record.leadExpiresAt.toISOString(), '2027-09-11T12:00:00.000Z');
+  assert.equal(record.consentExpiresAt.toISOString(), '2029-09-11T12:00:00.000Z');
+  assert.equal(record.phone, lead.contact);
+});
+
+test('YDB store creates both TTL tables once and upserts both records', async () => {
+  const createdTables = [];
+  const existingTables = new Set();
+  const queries = [];
+  const session = {
+    describeTable: async (tableName) => {
+      if (existingTables.has(tableName)) return { tableName };
+      const error = new Error(`Path ${tableName} was not found`);
+      error.code = 400140;
+      throw error;
+    },
+    createTable: async (tableName, description) => {
+      existingTables.add(tableName);
+      createdTables.push({ tableName, description });
+    },
+    prepareQuery: async (query) => query,
+    executeQuery: async (query, params) => { queries.push({ query, params }); },
+  };
+  class Driver {
+    constructor(options) { assert.equal(options.endpoint, env.ENDPOINT); assert.equal(options.database, env.DATABASE); this.tableClient = { withSessionRetry: async (callback) => callback(session) }; }
+    async ready() { return true; }
+  }
+  const typed = (type) => (value) => ({ type, value });
+  class Column { constructor(name, type) { this.name = name; this.type = type; } }
+  class TableDescription {
+    constructor() { this.columns = []; this.primaryKey = []; }
+    withColumn(column) { this.columns.push(column); return this; }
+    withPrimaryKey(column) { this.primaryKey.push(column); return this; }
+    withTtl(columnName, expireAfterSeconds) { this.ttlSettings = { dateTypeColumn: { columnName, expireAfterSeconds } }; return this; }
+  }
+  class TokenAuthService { constructor(token) { assert.equal(token, context.token.access_token); } async getAuthMetadata() { return 'token-metadata'; } }
+  const sdk = {
+    Column,
+    Driver,
+    StatusCode: { SCHEME_ERROR: 400070, ALREADY_EXISTS: 400130, NOT_FOUND: 400140 },
+    TableDescription,
+    TokenAuthService,
+    TypedValues: { utf8: typed('utf8'), timestamp: typed('timestamp') },
+    Types: { UTF8: { typeId: 'UTF8' }, TIMESTAMP: { typeId: 'TIMESTAMP' } },
+  };
+  const store = createYdbStore({ env, sdk });
+  await store.save(lead, '2026-09-11T12:00:00.000Z', context.token.access_token);
+  await store.save(lead, '2026-09-11T12:00:01.000Z', context.token.access_token);
+  assert.equal(createdTables.length, 2);
+  assert.equal(createdTables[0].tableName, LEADS_TABLE);
+  assert.equal(createdTables[1].tableName, CONSENT_TABLE);
+  assert.deepEqual(createdTables[0].description.columns.map(({ name }) => name), LEADS_COLUMNS.map(([name]) => name));
+  assert.deepEqual(createdTables[1].description.columns.map(({ name }) => name), CONSENT_COLUMNS.map(([name]) => name));
+  assert.deepEqual(createdTables[0].description.primaryKey, ['submission_id']);
+  assert.deepEqual(createdTables[0].description.ttlSettings, { dateTypeColumn: { columnName: 'expires_at', expireAfterSeconds: 0 } });
+  assert.equal(queries.length, 2);
+  assert.equal(queries[0].query, UPSERT_LEAD);
+  assert.equal(queries[0].params.$phone.value, lead.contact);
+  assert.equal(queries[0].params.$lead_expires_at.value.toISOString(), '2027-09-11T12:00:00.000Z');
+  assert.equal(queries[0].params.$consent_expires_at.value.toISOString(), '2029-09-11T12:00:00.000Z');
 });

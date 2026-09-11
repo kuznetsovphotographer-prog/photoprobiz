@@ -17,11 +17,8 @@ const responseHeaders = {
 interface Env {
   TELEGRAM_BOT_TOKEN?: string;
   TELEGRAM_CHAT_ID?: string;
+  RELAY_TOKEN?: string;
 }
-
-const contactMethods = new Set(['phone', 'telegram', 'whatsapp', 'max_messenger']);
-const packages = new Set(['Минимальный', 'Базовый', 'Полный']);
-const sources = new Set(['modal', 'inline']);
 
 function corsHeaders(request: Request): Record<string, string> | null {
   const origin = request.headers.get('Origin');
@@ -45,37 +42,38 @@ function text(value: unknown, maxLength: number) {
   return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
 }
 
-function parseLead(payload: unknown) {
+function parseNotification(payload: unknown) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
-  const lead = payload as Record<string, unknown>;
-  const name = text(lead.name, 100);
-  const contact = text(lead.contact, 160);
-  const contactMethod = text(lead.contactMethod, 32);
-  const packageName = text(lead.packageName, 32);
-  const source = text(lead.source, 16);
-  const phoneCountry = text(lead.phoneCountry, 8);
-  if (!name || !contact || !contactMethods.has(contactMethod) || lead.consent !== true || !sources.has(source)) return null;
-  if (!/^\+\d{10,15}$/.test(contact)) return null;
-  if (packageName && !packages.has(packageName)) return null;
-  return { name, contact, contactMethod, packageName, source, phoneCountry };
+  const notification = payload as Record<string, unknown>;
+  const allowedKeys = new Set(['event', 'site', 'submissionId', 'serverReceivedAt']);
+  if (Object.keys(notification).some((key) => !allowedKeys.has(key))) return null;
+  const event = text(notification.event, 32);
+  const site = text(notification.site, 64);
+  const submissionId = text(notification.submissionId, 80);
+  const serverReceivedAt = text(notification.serverReceivedAt, 40);
+  if (event !== 'new_lead' || site !== 'photoprobiz.ru') return null;
+  if (!/^[A-Za-z0-9-]{16,80}$/.test(submissionId)) return null;
+  if (!Number.isFinite(Date.parse(serverReceivedAt))) return null;
+  return { event, site, submissionId, serverReceivedAt };
 }
 
-function leadMessage(lead: NonNullable<ReturnType<typeof parseLead>>) {
-  const methodLabels: Record<string, string> = {
-    phone: 'Телефон', telegram: 'Telegram', whatsapp: 'WhatsApp', max_messenger: 'Max',
-  };
-  const sourceLabels: Record<string, string> = { modal: 'Всплывающая форма', inline: 'Форма на странице' };
+function notificationMessage(notification: NonNullable<ReturnType<typeof parseNotification>>) {
   return [
     'Новая заявка с сайта photoprobiz',
     '',
-    `Имя: ${lead.name}`,
-    `Контакт: ${lead.contact}`,
-    `Способ связи: ${methodLabels[lead.contactMethod]}`,
-    ...(lead.packageName ? [`Пакет: ${lead.packageName}`] : []),
-    ...(lead.phoneCountry ? [`Страна номера: ${lead.phoneCountry}`] : []),
-    `Форма: ${sourceLabels[lead.source]}`,
-    `Время: ${new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}`,
+    `ID заявки: ${notification.submissionId}`,
+    `Получено сервером: ${new Date(notification.serverReceivedAt).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}`,
+    'Имя и телефон сохранены в YDB.',
   ].join('\n');
+}
+
+function sameSecret(actual: string | null, expected: string | undefined) {
+  if (!actual || !expected || actual.length !== expected.length) return false;
+  let difference = 0;
+  for (let index = 0; index < actual.length; index += 1) {
+    difference |= actual.charCodeAt(index) ^ expected.charCodeAt(index);
+  }
+  return difference === 0;
 }
 
 async function sendTelegramMessage(env: Env, message: string) {
@@ -99,6 +97,7 @@ export default {
         ok: true,
         service: 'photoprobiz-lead-form',
         telegramConfigured: Boolean(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID),
+        relayConfigured: Boolean(env.RELAY_TOKEN),
       });
     }
 
@@ -112,11 +111,13 @@ export default {
     if (!request.headers.get('Content-Type')?.toLowerCase().includes('application/json')) {
       return json({ error: 'Content-Type must be application/json.' }, 415, cors);
     }
-
     let payload: unknown;
     try { payload = await request.json(); } catch { return json({ error: 'Invalid JSON.' }, 400, cors); }
-    const lead = parseLead(payload);
-    if (!lead) return json({ error: 'Invalid lead data.' }, 400, cors);
+    if (!sameSecret(request.headers.get('X-Relay-Token'), env.RELAY_TOKEN)) {
+      return json({ error: 'Unauthorized.' }, 401, cors);
+    }
+    const notification = parseNotification(payload);
+    if (!notification) return json({ error: 'Invalid notification data.' }, 400, cors);
 
     if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
       return json({
@@ -126,7 +127,7 @@ export default {
     }
 
     try {
-      await sendTelegramMessage(env, leadMessage(lead));
+      await sendTelegramMessage(env, notificationMessage(notification));
       return json({ ok: true }, 200, cors);
     } catch {
       return json({ error: 'Could not deliver the lead.' }, 502, cors);

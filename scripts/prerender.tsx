@@ -4,6 +4,7 @@ import { dirname } from 'node:path';
 import { HomePage } from '../src/App';
 import { ThankYouPage } from '../src/pages/ThankYouPage';
 import { ServicePage } from '../src/pages/ServicePage';
+import { LegalPage } from '../src/pages/LegalPage';
 import { CookieBanner } from '../src/components/CookieBanner';
 import { servicePages } from '../src/data/servicePages';
 import galleries from '../src/data/galleries.json';
@@ -20,11 +21,13 @@ const flatten=(nodes:DesignNode[]):DesignNode[]=>nodes.flatMap(node=>[node,...fl
 const hero=flatten((sections.find(section=>section.id==='hero')?.nodes ?? []) as DesignNode[]).find(node=>node.image?.critical)?.image;
 const localImage=(url:string,absolute=false,basePath='./')=>imageMap[url] ? (absolute?'https://photoprobiz.ru/':basePath)+imageMap[url].src : url;
 const localizeSchema=(value:unknown):unknown=>typeof value==='string'?localImage(value,true):Array.isArray(value)?value.map(localizeSchema):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).map(([k,v])=>[k,localizeSchema(v)])):value;
-type PageSpec = { file: string; key?: keyof typeof seoData; basePath: string; kind: 'home' | 'thankyou' | 'cookie' | '404' | 'service'; serviceKey?: string };
+type PageSpec = { file: string; key?: keyof typeof seoData; basePath: string; kind: 'home' | 'thankyou' | 'cookie' | 'privacy' | 'consent' | '404' | 'service'; serviceKey?: string };
 const pages: PageSpec[]=[
  {file:'index.html',key:'home',basePath:'./',kind:'home'},
  {file:'thankyou/index.html',key:'thankyou',basePath:'../',kind:'thankyou'},
  {file:'cookie/index.html',key:'cookie',basePath:'../',kind:'cookie'},
+ {file:'privacy/index.html',basePath:'../',kind:'privacy'},
+ {file:'consent/index.html',basePath:'../',kind:'consent'},
  {file:'page132097826.html',key:'page132097826',basePath:'./',kind:'thankyou'},
  {file:'page135439646.html',key:'page135439646',basePath:'./',kind:'cookie'},
  {file:'404.html',key:'cookie',basePath:'./',kind:'404'},
@@ -73,6 +76,18 @@ function utilitySeo(kind:PageSpec['kind'], source:SeoEntry):SeoEntry {
   title:'Уведомление об использовании cookie | Александр Кузнецов',canonical:'https://photoprobiz.ru/cookie/',
   meta:[{name:'robots',content:'noindex, follow'},{name:'description',content:'Информация об использовании файлов cookie на сайте фотографа Александра Кузнецова.'}],jsonLd:[],
  };
+ if(kind==='privacy' || kind==='consent'){
+  const privacy=kind==='privacy';
+  return {
+   title:privacy?'Политика обработки персональных данных | Александр Кузнецов':'Согласие на обработку персональных данных | Александр Кузнецов',
+   canonical:`https://photoprobiz.ru/${kind}/`,
+   meta:[
+    {name:'robots',content:'noindex, follow'},
+    {name:'description',content:privacy?'Политика обработки персональных данных на сайте фотографа Александра Кузнецова.':'Условия согласия на обработку персональных данных при отправке заявки на фотосъёмку.'},
+   ],
+   jsonLd:[],
+  };
+ }
  if(kind==='thankyou')return {
   ...source,canonical:'https://photoprobiz.ru/thankyou/',jsonLd:[],
   meta:[...source.meta.filter(meta=>meta.name!=='robots').map(meta=>meta.property==='og:url'?{...meta,content:'https://photoprobiz.ru/thankyou/'}:meta),{name:'robots',content:'noindex, follow'}],
@@ -112,6 +127,7 @@ for(const page of pages){
  let body='';
  if(page.kind==='home')body=renderToString(<HomePage basePath={page.basePath}/>);
  else if(page.kind==='service')body=renderToString(<ServicePage serviceKey={page.serviceKey!} basePath={page.basePath}/>);
+ else if(page.kind==='privacy' || page.kind==='consent')body=renderToString(<LegalPage kind={page.kind} basePath={page.basePath}/>);
  else{
   if(page.kind==='thankyou')body=renderToString(<div id="thankyou-root"><ThankYouPage basePath={page.basePath}/></div>);
   if(page.kind==='404')body='<main style="max-width:600px;margin:15vh auto;padding:24px"><h1>Страница не найдена</h1><a href="'+page.basePath+'">Вернуться на сайт</a></main>';

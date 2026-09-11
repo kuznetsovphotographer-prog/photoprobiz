@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 export const COOKIE_CONSENT_STORAGE_KEY = 'photoprobiz:cookie-consent';
 export const COOKIE_NOTICE_STORAGE_KEY = 'photoprobiz:cookie-notice-seen';
 
-export function CookieBanner({ onPrivacy }: { onPrivacy?: () => void }) {
+export function CookieBanner({ basePath = './' }: { basePath?: string }) {
   // Keep the banner out of prerendered markup until the browser has checked
   // persistent consent. Returning visitors therefore never see a brief flash.
   const [visible, setVisible] = useState(false);
@@ -30,7 +30,7 @@ export function CookieBanner({ onPrivacy }: { onPrivacy?: () => void }) {
 
   if (!visible) return null;
   return <aside className="cookie-banner" aria-label="Использование файлов cookie">
-    <p>Мы используем cookie, чтобы сайт работал лучше. Оставаясь на сайте, вы соглашаетесь с <a href="#popup:privacy" aria-haspopup="dialog" onClick={onPrivacy ? (event) => { event.preventDefault(); onPrivacy(); } : undefined}>Политикой конфиденциальности.</a></p>
+    <p>Мы используем только техническое хранилище браузера для работы сайта. Подробнее — в <a href={`${basePath}privacy/`}>Политике обработки персональных данных.</a></p>
     <button type="button" onClick={accept}>OK</button>
   </aside>;
 }

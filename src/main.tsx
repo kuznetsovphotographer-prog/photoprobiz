@@ -93,7 +93,7 @@ document.addEventListener('input',(event)=>{
 });
 
 const cookie=document.getElementById('cookie-root');
-if(cookie)hydrateRoot(cookie,<CookieBanner onPrivacy={()=>void showPopup('#popup:privacy')}/>);
+if(cookie)hydrateRoot(cookie,<CookieBanner basePath={basePath}/>);
 const thankyou=document.getElementById('thankyou-root');
 if(thankyou)void import('./pages/ThankYouPage').then(({ThankYouPage})=>hydrateRoot(thankyou,<ThankYouPage basePath={basePath}/>));
 document.querySelectorAll<HTMLElement>('[data-form-root="inline"]').forEach(el=>hydrateRoot(el,<LeadForm variant="inline" basePath={basePath}/>));

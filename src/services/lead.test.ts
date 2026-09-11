@@ -4,12 +4,24 @@ import { createHttpLeadAdapter, mockLeadAdapter, submitLead, validateLead, type 
 
 const validLead: LeadInput = {
   name: 'Тест', contact: '+79991234567', contactMethod: 'phone', consent: true, source: 'modal',
+  consentAcceptedAt: '2026-09-11T10:00:00.000Z', consentVersion: '2026-09-11',
+  submissionId: '019a1234-5678-7000-8000-123456789abc', formId: 'modal-general',
 };
 
 test('empty fields and unchecked consent return field-specific errors', () => {
   assert.deepEqual(validateLead({ ...validLead, name: '', contact: '', consent: false }), {
     name: 'Обязательное поле', contact: 'Обязательное поле', consent: 'Обязательное поле',
   });
+});
+
+test('consent evidence is required and must use the current document version', () => {
+  for (const patch of [
+    { consentAcceptedAt: '' },
+    { consentAcceptedAt: 'not-a-date' },
+    { consentVersion: 'legacy' },
+    { submissionId: '' },
+    { formId: '' },
+  ]) assert.equal(validateLead({ ...validLead, ...patch }).consent, 'Обязательное поле');
 });
 
 test('a short Russian number cannot pass just because the country prefix adds a digit', () => {
@@ -77,5 +89,16 @@ test('HTTP delivery requires explicit confirmation, not just status 200', async 
     }
     globalThis.fetch = async () => new Response(JSON.stringify({ ok: true }));
     assert.deepEqual(await createHttpLeadAdapter('https://example.test/lead')(validLead), { status: 'success', mode: 'remote' });
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('HTTP delivery preserves the complete consent evidence', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (_input, init) => {
+      assert.deepEqual(JSON.parse(String(init?.body)), validLead);
+      return new Response(JSON.stringify({ ok: true }));
+    };
+    await createHttpLeadAdapter('https://example.test/lead')(validLead);
   } finally { globalThis.fetch = originalFetch; }
 });

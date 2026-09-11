@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { ContactIcon } from './ContactIcon';
 import { phoneCountries } from '../data/phoneCountries';
+import { PERSONAL_DATA_CONSENT_VERSION } from '../data/privacy';
 import {
   LEAD_SUCCESS_STORAGE_KEY, submitLead, validateLead,
   type ContactMethod, type LeadErrors, type LeadInput, type PackageName,
@@ -20,6 +21,16 @@ const methods: { value: ContactMethod; label: string }[] = [
   { value: 'max_messenger', label: 'Max' },
 ];
 const packages: PackageName[] = ['Минимальный', 'Базовый', 'Полный'];
+const packageFormIds: Record<PackageName, string> = {
+  'Минимальный': 'modal-package-minimal',
+  'Базовый': 'modal-package-base',
+  'Полный': 'modal-package-full',
+};
+
+function createSubmissionId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return `lead-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+}
 
 // During prerender Vite's import.meta.env is unavailable, while the production
 // browser bundle receives VITE_LEAD_ENDPOINT from Vite. Read the Node
@@ -56,7 +67,8 @@ export function LeadForm({ variant = 'modal', packageName, basePath = './', onSu
   const [method, setMethod] = useState<ContactMethod>('phone');
   const [phone, setPhone] = useState('');
   const [country, setCountry] = useState('RU');
-  const [consent, setConsent] = useState(true);
+  const [consent, setConsent] = useState(false);
+  const [consentAcceptedAt, setConsentAcceptedAt] = useState('');
   const [selectedPackage, setSelectedPackage] = useState<PackageName>(packageName ?? 'Минимальный');
   const [errors, setErrors] = useState<LeadErrors>({});
   const [submitError, setSubmitError] = useState('');
@@ -64,6 +76,7 @@ export function LeadForm({ variant = 'modal', packageName, basePath = './', onSu
   const [submitted, setSubmitted] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const submittingRef = useRef(false);
+  const submissionIdRef = useRef('');
   const controllerRef = useRef<AbortController | null>(null);
   const countryData = phoneCountries.find((item) => item.iso === country)!;
   const prefix = countryData.dial.replace(/\D/g, '');
@@ -91,8 +104,13 @@ export function LeadForm({ variant = 'modal', packageName, basePath = './', onSu
     return () => observer.disconnect();
   }, [inline, errors, submitError]);
 
-  const getLead = (): LeadInput => ({
+  const formId = inline ? 'homepage-inline' : packageName ? packageFormIds[selectedPackage] : 'modal-general';
+  const getLead = (submissionId: string): LeadInput => ({
     name, contact, contactMethod: method, consent, source: variant,
+    consentAcceptedAt,
+    consentVersion: PERSONAL_DATA_CONSENT_VERSION,
+    submissionId,
+    formId,
     phoneCountry: country,
     ...(packageName ? { packageName: selectedPackage } : {}),
   });
@@ -123,12 +141,14 @@ export function LeadForm({ variant = 'modal', packageName, basePath = './', onSu
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submittingRef.current) return;
-    const lead = getLead();
+    const submissionId = submissionIdRef.current || createSubmissionId();
+    const lead = getLead(submissionId);
     const validation = validateLead(lead);
     setErrors(validation);
     setSubmitError('');
     const firstError = (['name', 'contact', 'consent'] as const).find((field) => validation[field]);
     if (firstError) { focusField(firstError); return; }
+    submissionIdRef.current = submissionId;
     submittingRef.current = true;
     setPending(true);
     controllerRef.current = new AbortController();
@@ -213,9 +233,16 @@ export function LeadForm({ variant = 'modal', packageName, basePath = './', onSu
           </div>}
 
           <div className="lead-field lead-field--consent">
-            <label className="lead-consent"><input name="consent" type="checkbox" checked={consent} onChange={(event) => { setConsent(event.target.checked); setErrors((previous) => ({ ...previous, consent: undefined })); }}
+            <label className="lead-consent"><input name="consent" type="checkbox" checked={consent} onChange={(event) => {
+              const checked = event.target.checked;
+              setConsent(checked);
+              setConsentAcceptedAt(checked ? new Date().toISOString() : '');
+              if (!checked) submissionIdRef.current = '';
+              setErrors((previous) => ({ ...previous, consent: undefined }));
+              setSubmitError('');
+            }}
               required disabled={pending} aria-invalid={Boolean(errors.consent)} aria-describedby={errors.consent ? `${id}-consent-error` : undefined} />
-              <span>Заполняя и отправляя форму, я даю своё согласие на обработку моих персональных данных в соответствии с ФЗ «О персональных данных» (№152-ФЗ от 27.07.2006), на условиях и для целей, определенных <a href="#popup:privacy" aria-haspopup="dialog">Политикой конфиденциальности</a>.</span>
+              <span>Я ознакомился(лась) с <a href={`${basePath}privacy/`} target="_blank" rel="noopener noreferrer">Политикой в отношении обработки персональных данных</a> и даю отдельное <a href={`${basePath}consent/`} target="_blank" rel="noopener noreferrer">Согласие на обработку персональных данных</a>.</span>
             </label>{fieldError('consent')}
           </div>
         </div>
@@ -223,7 +250,7 @@ export function LeadForm({ variant = 'modal', packageName, basePath = './', onSu
         {(errorMessages.length > 0 || submitError) && <div className="lead-error-summary" role="alert" aria-label="Ошибки при заполнении формы">
           {submitError ? <p>{submitError}</p> : <><p>Пожалуйста, заполните все обязательные поля</p>{errorMessages.filter((message) => message !== 'Обязательное поле').map((message) => <p key={message}>{message}</p>)}</>}
         </div>}
-        <button className="lead-submit" type="submit" disabled={pending}>
+        <button className="lead-submit" type="submit" disabled={pending || !consent}>
           {pending ? <><span className="lead-spinner" aria-hidden="true" />Отправка…</> : inline ? 'ОТПРАВИТЬ И ПОЛУЧИТЬ ЧЕК ЛИСТ' : 'Заказать фотосессию'}
         </button>
         <span className="secondary-sr-only" role="status">{submitted ? (remoteDeliveryEnabled ? 'Заявка отправлена фотографу.' : 'Демонстрационная заявка обработана. Контактные данные не передавались.') : pending ? 'Обработка формы' : ''}</span>

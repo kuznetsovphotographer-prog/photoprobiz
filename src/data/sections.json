@@ -13968,16 +13968,25 @@
     "nodes": [
       {
         "tag": "div",
-        "className": "n1635 btn-polit",
+        "className": "n1635 btn-polit footer-legal-links",
         "attrs": {},
         "children": [
           {
             "tag": "a",
             "className": "n1636",
             "attrs": {
-              "href": "#popup:privacy"
+              "href": "privacy/"
             },
             "html": " <div class=\"button-content\"> <span class=\"button-text\">Политика конфиденциальности</span> </div> <span></span> ",
+            "children": []
+          },
+          {
+            "tag": "a",
+            "className": "n1636",
+            "attrs": {
+              "href": "consent/"
+            },
+            "html": " <div class=\"button-content\"> <span class=\"button-text\">Согласие на обработку данных</span> </div> <span></span> ",
             "children": []
           }
         ]

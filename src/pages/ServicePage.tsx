@@ -65,8 +65,11 @@ export function ServicePage({ serviceKey, basePath = '../' }: { serviceKey: stri
         <a className="service-primary-cta" href={`${basePath}#inquiry`}>Оставить заявку</a>
       </section>
     </main>
-    <footer className="service-footer"><span>© 2026 Александр Кузнецов</span><a href={basePath}>Вернуться на главную</a></footer>
-    <div id="cookie-root"><CookieBanner /></div><div id="ui-root" />
+    <footer className="service-footer">
+      <span>© 2026 Александр Кузнецов</span>
+      <nav aria-label="Юридические документы"><a href={`${basePath}privacy/`}>Политика обработки данных</a><a href={`${basePath}consent/`}>Согласие на обработку данных</a></nav>
+      <a href={basePath}>Вернуться на главную</a>
+    </footer>
+    <div id="cookie-root"><CookieBanner basePath={basePath} /></div><div id="ui-root" />
   </>;
 }
-

@@ -9,7 +9,7 @@ export function HomePage({basePath='./'}:{basePath?:string}) {
     <DesignSection section={all[0]} basePath={basePath}/>
     <main id="main-content" className="site-content">{all.slice(1,-1).map(section=><DesignSection key={section.id} section={section} basePath={basePath}/>)}</main>
     <DesignSection section={all[all.length-1]} basePath={basePath}/>
-    <div id="cookie-root"><CookieBanner/></div>
+    <div id="cookie-root"><CookieBanner basePath={basePath}/></div>
     <div id="ui-root"/>
   </>;
 }
