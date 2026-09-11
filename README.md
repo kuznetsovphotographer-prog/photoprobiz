@@ -1,6 +1,8 @@
-# photoprobiz.ru — автономная локальная версия
+# photoprobiz.ru — production-сайт и локальная разработка
 
-React + TypeScript + Vite. Источник дизайна и содержания — опубликованный photoprobiz.ru, исследованный 7 сентября 2026 года. Проект работает без Tilda, Google Fonts, внешнего хранилища фотографий и сервера заявок.
+React + TypeScript + Vite. Источник дизайна и содержания — опубликованный photoprobiz.ru, исследованный 7 сентября 2026 года. Публичный сайт работает через GitHub Pages; заявки принимает Yandex Cloud Function с записью в YDB, а обезличенные уведомления доставляет Cloudflare Worker в Telegram.
+
+Актуальная карта production-инфраструктуры, ресурсы, архитектурные схемы и порядок передачи проекта: [`PROJECT-STATUS.md`](PROJECT-STATUS.md). Инструкции для следующего AI-агента: [`AGENTS.md`](AGENTS.md).
 
 ## Запуск на Windows
 
@@ -41,7 +43,9 @@ npm run preview
 | `/korporativnaya-fotosessiya/` | Отдельная SEO-страница корпоративной фотосъёмки |
 | `/fotosessiya-sotrudnikov-v-ofise/` | Отдельная SEO-страница съёмки сотрудников в офисе |
 | `/delovaya-fotosessiya-dlya-vrachey/` | Отдельная SEO-страница фотосъёмки врачей и клиник |
-| `/thankyou/` | Благодарность и скачивание исходного PDF после mock-заявки |
+| `/thankyou/` | Благодарность и скачивание исходного PDF после успешной заявки |
+| `/privacy/` | Политика в отношении обработки персональных данных |
+| `/consent/` | Согласие на обработку персональных данных |
 | `/cookie/` | Сохранённая служебная страница оригинала |
 | `/page132097826.html` | Исходный числовой адрес благодарности |
 | `/page135439646.html` | Исходный числовой адрес cookie-страницы |
@@ -81,17 +85,17 @@ npm run preview
 
 `scripts/optimize-assets.mjs` воспроизводит подготовку ресурсов по проверенному сопоставлению. Он использует Sharp из установленного пакета или из доступного на этом компьютере runtime Codex. Готовые ресурсы уже включены в проект, поэтому Sharp и Python не нужны для запуска и сборки сайта. Для переноса самого оптимизатора на другую машину установите Sharp отдельно либо задайте путь `CODEX_NODE_MODULES` к папке с ним.
 
-## Формы сейчас и будущий Worker
+## Формы и production-транспорт
 
-По умолчанию `VITE_LEAD_ENDPOINT` не задан. Форма проверяет поля, отображает ошибки, блокирует повторную отправку во время обработки и через mock-адаптер открывает благодарность. Никаких заявок фотографу не отправляется. Контактные данные не сохраняются; sessionStorage содержит только маркер успешного mock-сценария. Все 205 вариантов страны и маски телефона доступны локально.
+Форма проверяет поля и явное согласие, блокирует повторную отправку во время обработки и после успешного ответа открывает страницу благодарности. В production workflow задаёт действующий URL Yandex Cloud Function через `VITE_LEAD_ENDPOINT`. Функция сначала сохраняет заявку и доказательство согласия в YDB `ru-central1`, затем передаёт Cloudflare Worker только ID и служебное время для обезличенного уведомления Telegram.
 
-Будущий транспорт находится в `src/services/lead.ts`. После создания Worker можно задать в `.env.local`:
+Для локальной проверки реальной отправки задайте в `.env.local`:
 
 ```dotenv
-VITE_LEAD_ENDPOINT=https://your-worker.example/api/lead
+VITE_LEAD_ENDPOINT=https://functions.yandexcloud.net/d4e5ur2fo156lrcve6id
 ```
 
-Это переключит адаптер на POST. Текущий payload соответствует реальным полям: `name`, `contact`, `contactMethod`, `consent`, `packageName`, `source`, `phoneCountry`. При интеграции добавьте на границе транспорта `page` и `createdAt`, если они нужны серверу. Worker должен самостоятельно валидировать payload и ответ, ограничивать частоту запросов, проверять CORS и обрабатывать ошибки Telegram. Telegram Bot Token хранится только в секретах Worker. Сейчас Worker, бот и внешняя отправка не подключены.
+Если переменная пуста, локальная версия использует mock и ничего не отправляет. Рабочий payload включает имя, телефон, способ связи, пакет, источник, страницу, идентификатор формы, время и версию согласия. Telegram Bot Token хранится только в Cloudflare Worker Secrets. Полная схема описана в [`PROJECT-STATUS.md`](PROJECT-STATUS.md) и [`YANDEX-CLOUD-YDB-PERSONAL-DATA-GUIDE.md`](YANDEX-CLOUD-YDB-PERSONAL-DATA-GUIDE.md).
 
 ## SEO
 
@@ -101,11 +105,9 @@ VITE_LEAD_ENDPOINT=https://your-worker.example/api/lead
 
 На главной сохранены релевантные LocalBusiness, Person и FAQPage и добавлена WebSite. Минимальная цена в Offer соответствует пакету 15 000 ₽. Каждая страница услуги получает собственную Service schema; на 404, cookie и thank-you коммерческая разметка не выводится, эти страницы закрыты от индексации. При будущем изменении домена обновите canonical/OG/JSON-LD и адрес sitemap в `scripts/prerender.tsx` / `src/data/seo.json`.
 
-## GitHub Pages на следующем этапе
+## GitHub Pages
 
-Публиковать следует содержимое `dist` после `npm ci` и `npm run build`. Сборка использует относительную базу Vite, статические HTML-страницы и директории реальных URL. Перед публикацией под путём репозитория отдельно проверьте базовые URL, канонический домен и пути в метаданных; перед публикацией на photoprobiz.ru оставьте канонический домен. GitHub Pages и пользовательский домен в этой работе не подключались. Node-сервер для Pages не нужен.
-
-Готовый workflow и пошаговая инструкция: [`GITHUB-PAGES-PUBLISH.md`](GITHUB-PAGES-PUBLISH.md). После включения GitHub Pages каждый push в `main` автоматически запускает тесты, сборку и публикацию.
+Сайт опубликован на GitHub Pages с пользовательским доменом `photoprobiz.ru`. Workflow `.github/workflows/deploy-pages.yml` при каждом push в `main` выполняет установку, тесты, production-сборку с URL функции заявок и публикацию `dist`. Папку `dist` вручную в Git не добавляют. Пошаговая инструкция: [`GITHUB-PAGES-PUBLISH.md`](GITHUB-PAGES-PUBLISH.md).
 
 ## Проверки
 
