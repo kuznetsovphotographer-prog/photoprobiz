@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { randomBytes, scryptSync } = require('node:crypto');
 const { createHandler } = require('./index.js');
-const { CONSENT_COLUMNS, CONSENT_TABLE, LEADS_COLUMNS, LEADS_TABLE, UPSERT_LEAD, createYdbStore, storageRecord } = require('./storage.js');
+const { CONSENT_COLUMNS, CONSENT_TABLE, LEADS_COLUMNS, LEADS_TABLE, LEAD_META_COLUMNS, LEAD_META_TABLE, UPSERT_LEAD, UPSERT_MANUAL_LEAD, createYdbStore, storageRecord } = require('./storage.js');
 
 const env = {
   ENDPOINT: 'grpcs://example.test:2135', DATABASE: '/test/database',
@@ -59,20 +59,28 @@ test('admin page is public shell but lead data requires a signed session', async
     expires_at: new Date('2027-09-11T12:00:00.000Z'),
   };
   const statusUpdates = [];
+  const noteUpdates = [];
+  const manualLeads = [];
   const leadStore = {
     databaseConfigured: () => true,
     list: async (_token, options) => {
       assert.equal(options.limit, 50);
+      assert.equal(options.siteHost, 'photoprobiz.ru');
       return { rows: [row], hasMore: false };
     },
     get: async (id) => id === lead.submissionId ? row : null,
+    sites: async () => ['photoprobiz.ru'],
+    saveManual: async (manual) => manualLeads.push(manual),
+    updateMeta: async (id, notes, manualSource) => { noteUpdates.push({ id, notes, manualSource }); return true; },
     updateStatus: async (id, status) => statusUpdates.push({ id, status }),
   };
   const instance = createHandler({ env: adminEnv, leadStore });
   const page = await instance({ httpMethod: 'GET', queryStringParameters: { admin: '1' }, headers: {} }, context);
   assert.equal(page.statusCode, 200);
   assert.match(page.headers['Content-Type'], /text\/html/);
-  assert.ok(page.body.includes('личный кабинет'));
+  assert.ok(page.body.includes('Александр · CRM'));
+  assert.ok(page.body.includes('Добавить клиента'));
+  assert.ok(page.body.includes('Моя заметка'));
   assert.ok(!page.body.includes(lead.contact));
 
   const unauthorized = await instance({ httpMethod: 'GET', queryStringParameters: { admin_api: 'leads' }, headers: {} }, context);
@@ -94,7 +102,7 @@ test('admin page is public shell but lead data requires a signed session', async
   assert.ok(session.length > 40);
 
   const listed = await instance({
-    httpMethod: 'GET', queryStringParameters: { admin_api: 'leads', limit: '50' }, headers: { 'X-Admin-Session': session },
+    httpMethod: 'GET', queryStringParameters: { admin_api: 'leads', limit: '50', site: 'photoprobiz.ru' }, headers: { 'X-Admin-Session': session },
   }, context);
   assert.equal(listed.statusCode, 200);
   const listedBody = JSON.parse(listed.body);
@@ -104,6 +112,15 @@ test('admin page is public shell but lead data requires a signed session', async
   assert.equal(typeof listedBody.session, 'string');
   assert.notEqual(listedBody.session, session);
 
+  const sites = await instance({
+    httpMethod: 'GET', queryStringParameters: { admin_api: 'sites' }, headers: { 'X-Admin-Session': session },
+  }, context);
+  assert.equal(sites.statusCode, 200);
+  assert.deepEqual(JSON.parse(sites.body).sites, [
+    { host: 'manual.crm', label: 'Внесены вручную' },
+    { host: 'photoprobiz.ru', label: 'Деловой фотограф' },
+  ]);
+
   const updated = await instance({
     httpMethod: 'POST', queryStringParameters: { admin_api: 'status' },
     headers: { 'X-Admin-Session': session, Origin: 'https://functions.yandexcloud.net' },
@@ -111,6 +128,78 @@ test('admin page is public shell but lead data requires a signed session', async
   }, context);
   assert.equal(updated.statusCode, 200);
   assert.deepEqual(statusUpdates, [{ id: lead.submissionId, status: 'contacted' }]);
+
+  const notes = await instance({
+    httpMethod: 'POST', queryStringParameters: { admin_api: 'notes' },
+    headers: { 'X-Admin-Session': session, Origin: 'https://functions.yandexcloud.net' },
+    body: JSON.stringify({ submissionId: lead.submissionId, notes: 'Позвонить в пятницу', manualSource: '' }),
+  }, context);
+  assert.equal(notes.statusCode, 200);
+  assert.deepEqual(noteUpdates, [{ id: lead.submissionId, notes: 'Позвонить в пятницу', manualSource: '' }]);
+});
+
+test('a configured second site is identified by origin and stored under its own host', async () => {
+  const secondEnv = {
+    ...env,
+    DELIVERY_MODE: 'cloudflare-relay',
+    CRM_SITES_JSON: JSON.stringify([{
+      siteHost: 'example-photo.ru', label: 'Свадебный сайт', origins: ['https://example-photo.ru'],
+      consentVersions: ['2026-09-11'], formIds: ['contact-form'], packages: [],
+    }]),
+  };
+  let storedHost = '';
+  const instance = createHandler({ env: secondEnv, leadStore: {
+    databaseConfigured: () => true,
+    save: async (_lead, _time, _token, siteHost) => { storedHost = siteHost; },
+  }, fetchImpl: async (_url, options) => {
+    assert.equal(JSON.parse(options.body).site, 'example-photo.ru');
+    return success();
+  } });
+  const result = await instance({
+    ...event({ ...lead, formId: 'contact-form', packageName: undefined }),
+    headers: { Origin: 'https://example-photo.ru', 'Content-Type': 'application/json' },
+  }, context);
+  assert.equal(result.statusCode, 200);
+  assert.equal(storedHost, 'example-photo.ru');
+});
+
+test('signed admin API creates manual contacts without a consent event', async () => {
+  const adminEnv = {
+    ...env,
+    ADMIN_BASE_URL: 'https://functions.yandexcloud.net/test-function-id',
+    ADMIN_PASSWORD_SCRYPT: passwordHash('crm-password'),
+    ADMIN_SESSION_SECRET: 'another-test-admin-session-secret-at-least-32-characters',
+  };
+  let savedManual;
+  const leadStore = {
+    databaseConfigured: () => true,
+    saveManual: async (value) => { savedManual = value; },
+    get: async (id) => ({
+      submission_id: id, server_received_at: new Date('2026-09-11T12:00:00.000Z'),
+      consent_accepted_at: new Date('2026-09-11T12:00:00.000Z'), consent_version: '',
+      form_id: 'crm-manual', source: 'manual', site_host: 'manual.crm', name: savedManual.name,
+      phone: savedManual.contact, contact_method: savedManual.contactMethod, package_name: '', phone_country: '',
+      status: 'new', expires_at: new Date('2027-09-11T12:00:00.000Z'), notes: savedManual.notes,
+      manual_source: savedManual.manualSource,
+    }),
+  };
+  const instance = createHandler({ env: adminEnv, leadStore });
+  const login = await instance({
+    httpMethod: 'POST', queryStringParameters: { admin_api: 'login' },
+    headers: { Origin: 'https://functions.yandexcloud.net' }, body: JSON.stringify({ password: 'crm-password' }),
+  }, context);
+  const session = JSON.parse(login.body).session;
+  const created = await instance({
+    httpMethod: 'POST', queryStringParameters: { admin_api: 'manual' },
+    headers: { Origin: 'https://functions.yandexcloud.net', 'X-Admin-Session': session },
+    body: JSON.stringify({ name: 'Мария', phone: '+79991112233', contactMethod: 'telegram', manualSource: 'Рекомендация', notes: 'Нужна съёмка команды' }),
+  }, context);
+  assert.equal(created.statusCode, 201);
+  assert.match(savedManual.submissionId, /^[a-f0-9-]{36}$/);
+  assert.equal(savedManual.manualSource, 'Рекомендация');
+  const createdLead = JSON.parse(created.body).lead;
+  assert.equal(createdLead.siteHost, 'manual.crm');
+  assert.equal(createdLead.notes, 'Нужна съёмка команды');
 });
 
 test('preflight handles case-insensitive headers and allowed origins', async () => {
@@ -230,7 +319,7 @@ test('storage records use separate one-year and three-year expirations', () => {
   assert.equal(record.phone, lead.contact);
 });
 
-test('YDB store creates both TTL tables once and upserts both records', async () => {
+test('YDB store creates lead, consent and CRM metadata tables once and upserts both consent records', async () => {
   const createdTables = [];
   const existingTables = new Set();
   const queries = [];
@@ -273,11 +362,13 @@ test('YDB store creates both TTL tables once and upserts both records', async ()
   const store = createYdbStore({ env, sdk });
   await store.save(lead, '2026-09-11T12:00:00.000Z', context.token.access_token);
   await store.save(lead, '2026-09-11T12:00:01.000Z', context.token.access_token);
-  assert.equal(createdTables.length, 2);
+  assert.equal(createdTables.length, 3);
   assert.equal(createdTables[0].tableName, LEADS_TABLE);
   assert.equal(createdTables[1].tableName, CONSENT_TABLE);
+  assert.equal(createdTables[2].tableName, LEAD_META_TABLE);
   assert.deepEqual(createdTables[0].description.columns.map(({ name }) => name), LEADS_COLUMNS.map(([name]) => name));
   assert.deepEqual(createdTables[1].description.columns.map(({ name }) => name), CONSENT_COLUMNS.map(([name]) => name));
+  assert.deepEqual(createdTables[2].description.columns.map(({ name }) => name), LEAD_META_COLUMNS.map(([name]) => name));
   assert.deepEqual(createdTables[0].description.primaryKey, ['submission_id']);
   assert.deepEqual(createdTables[0].description.ttlSettings, { dateTypeColumn: { columnName: 'expires_at', expireAfterSeconds: 0 } });
   assert.equal(queries.length, 2);
@@ -285,4 +376,10 @@ test('YDB store creates both TTL tables once and upserts both records', async ()
   assert.equal(queries[0].params.$phone.value, lead.contact);
   assert.equal(queries[0].params.$lead_expires_at.value.toISOString(), '2027-09-11T12:00:00.000Z');
   assert.equal(queries[0].params.$consent_expires_at.value.toISOString(), '2029-09-11T12:00:00.000Z');
+
+  await store.saveManual({ submissionId: 'manual-1234567890abcdef', name: 'Мария', contact: '+79991112233', contactMethod: 'phone', notes: 'Позвонить', manualSource: 'Рекомендация' }, '2026-09-11T13:00:00.000Z', context.token.access_token);
+  assert.equal(queries.length, 3);
+  assert.equal(queries[2].query, UPSERT_MANUAL_LEAD);
+  assert.equal(queries[2].params.$site_host.value, 'manual.crm');
+  assert.equal(queries[2].params.$notes.value, 'Позвонить');
 });

@@ -11,7 +11,7 @@
 - Production: `https://photoprobiz.ru/` через GitHub Pages.
 - Формы отправляют персональные данные напрямую в Yandex Cloud Function и YDB Serverless `ru-central1`.
 - Cloudflare Worker и Telegram получают только обезличенное уведомление с ID заявки.
-- Личный кабинет расположен в Yandex Cloud Function и защищён паролем со скользящей сессией 90 дней.
+- CRM-кабинет расположен в Yandex Cloud Function и защищён паролем со скользящей сессией 90 дней. Он объединяет сайты, ручные контакты, статусы и заметки.
 - Отдельная Yandex Cloud Function проверяет сайт раз в час; история хранится в YDB, основной канал — Telegram, резерв — Yandex Monitoring email.
 - GraphQL/GraphiQL отсутствует; используются HTTPS endpoint и закрытые admin API.
 
@@ -21,6 +21,8 @@
 - Не просите владельца вставлять секреты в чат. Используйте локальные защищённые файлы, Yandex Cloud Environment Variables и Cloudflare Worker Secrets.
 - Никогда не передавайте имя, телефон, способ связи, пакет или доказательство согласия через Cloudflare или Telegram.
 - Сохраняйте порядок обработки: валидация → атомарная запись `leads` и `consent_events` в YDB → обезличенное уведомление.
+- Для веб-заявки определяйте сайт только по разрешённому `Origin` и серверной конфигурации `CRM_SITES_JSON`; не доверяйте полю `site` из браузера.
+- Ручные контакты записывайте как `manual.crm` в `leads` и `lead_meta`; не создавайте для них фиктивное событие веб-согласия в `consent_events`.
 - Галочка согласия при открытии формы пустая; без самостоятельной установки отправка заблокирована.
 - При изменении обработки данных синхронно обновляйте `src/data/privacy.ts`, страницу согласия, схему хранения, тесты и документацию.
 - Не используйте стоковые фотографии и не придумывайте услуги, цены, достижения или юридические факты.
@@ -33,7 +35,7 @@
 - `src/data/galleries.json` — галереи и порядок фотографий.
 - `src/components/LeadForm.tsx`, `src/services/lead.ts` — форма и транспорт.
 - `src/data/privacy.ts` — политика и согласие.
-- `yandex/lead-function/` — запись в YDB, кабинет и API.
+- `yandex/lead-function/` — запись в YDB, многосайтовая CRM и API (`leads`, `consent_events`, `lead_meta`).
 - `yandex/monitor-function/` — часовые проверки и история.
 - `cloudflare/lead-worker/` — обезличенные Telegram-уведомления.
 - `.github/workflows/deploy-pages.yml` — production-сборка с URL Yandex Function.

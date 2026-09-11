@@ -1,5 +1,6 @@
 'use strict';
 
+const { randomUUID } = require('node:crypto');
 const { createYdbStore } = require('./storage.js');
 const { adminPage } = require('./admin-page.js');
 const {
@@ -9,30 +10,93 @@ const {
   passwordMatches,
 } = require('./admin-auth.js');
 
-const allowedOrigins = new Set([
-  'https://photoprobiz.ru', 'https://www.photoprobiz.ru',
-  'https://kuznetsovphotographer-prog.github.io',
-  'http://127.0.0.1:4173', 'http://127.0.0.1:5173',
-  'http://localhost:4173', 'http://localhost:5173',
-]);
 const methods = { phone: 'Телефон', telegram: 'Telegram', whatsapp: 'WhatsApp', max_messenger: 'Max' };
 const sources = { modal: 'Всплывающая форма', inline: 'Форма на странице' };
-const packages = new Set(['Минимальный', 'Базовый', 'Полный']);
-const formIds = new Set(['homepage-inline', 'modal-general', 'modal-package-minimal', 'modal-package-base', 'modal-package-full']);
-const CONSENT_VERSION = '2026-09-11';
+const DEFAULT_SITE = {
+  siteHost: 'photoprobiz.ru',
+  label: 'Деловой фотограф',
+  origins: [
+    'https://photoprobiz.ru', 'https://www.photoprobiz.ru',
+    'https://kuznetsovphotographer-prog.github.io',
+    'http://127.0.0.1:4173', 'http://127.0.0.1:5173',
+    'http://localhost:4173', 'http://localhost:5173',
+  ],
+  consentVersions: ['2026-09-11'],
+  packages: ['Минимальный', 'Базовый', 'Полный'],
+  formIds: ['homepage-inline', 'modal-general', 'modal-package-minimal', 'modal-package-base', 'modal-package-full'],
+};
 const MAX_BODY_BYTES = 8192;
 const ADMIN_STATUSES = new Set(['new', 'contacted', 'closed']);
+const HOST_PATTERN = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
 
-function parseLead(value) {
+function siteConfigurations(env = process.env) {
+  let custom = [];
+  try {
+    const value = env.CRM_SITES_JSON?.trim();
+    if (value) custom = JSON.parse(value);
+  } catch { custom = []; }
+  if (!Array.isArray(custom)) custom = [];
+  const normalized = custom.map((item) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
+    const siteHost = typeof item.siteHost === 'string' ? item.siteHost.trim().toLowerCase() : '';
+    const label = typeof item.label === 'string' ? item.label.trim().slice(0, 80) : '';
+    const origins = Array.isArray(item.origins) ? item.origins.filter((value) => {
+      try {
+        const url = new URL(value);
+        return url.origin === value && (url.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(url.hostname));
+      } catch { return false; }
+    }) : [];
+    const consentVersions = Array.isArray(item.consentVersions)
+      ? item.consentVersions.filter((value) => typeof value === 'string' && /^[A-Za-z0-9._-]{1,40}$/.test(value)) : [];
+    const formIds = Array.isArray(item.formIds)
+      ? item.formIds.filter((value) => typeof value === 'string' && /^[A-Za-z0-9._-]{1,80}$/.test(value)) : [];
+    const packages = Array.isArray(item.packages)
+      ? item.packages.filter((value) => typeof value === 'string' && value.trim() && value.length <= 120) : [];
+    if (!HOST_PATTERN.test(siteHost) || !label || !origins.length || !consentVersions.length) return null;
+    return { siteHost, label, origins, consentVersions, formIds, packages };
+  }).filter(Boolean);
+  const byOrigin = new Map();
+  for (const config of [DEFAULT_SITE, ...normalized]) for (const origin of config.origins) byOrigin.set(origin, config);
+  return [...new Set(byOrigin.values())];
+}
+
+function siteForOrigin(origin, configuredSites) {
+  for (const site of configuredSites) if (site.origins.includes(origin)) return site;
+  return null;
+}
+
+function crmSites(configuredSites, storedHosts = []) {
+  const labels = new Map([['manual.crm', 'Внесены вручную'], ...configuredSites.map((site) => [site.siteHost, site.label])]);
+  const hosts = new Set([...configuredSites.map((site) => site.siteHost), 'manual.crm', ...storedHosts]);
+  return [...hosts].filter((host) => HOST_PATTERN.test(host)).sort().map((host) => ({ host, label: labels.get(host) || host }));
+}
+
+function parseManualLead(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const name = typeof value.name === 'string' ? value.name.trim() : '';
+  const contact = typeof value.phone === 'string' ? value.phone.trim() : '';
+  const manualSource = typeof value.manualSource === 'string' ? value.manualSource.trim() : '';
+  const notes = typeof value.notes === 'string' ? value.notes.trim() : '';
+  if (!name || name.length > 100 || !/[\p{L}]/u.test(name) || /[<>\r\n]/u.test(name)) return null;
+  if (!/^\+\d{10,15}$/.test(contact) || !Object.hasOwn(methods, value.contactMethod)) return null;
+  if (!manualSource || manualSource.length > 120 || /[<>\r\n]/u.test(manualSource)) return null;
+  if (notes.length > 3000 || /[<>]/u.test(notes)) return null;
+  return { name, contact, contactMethod: value.contactMethod, manualSource, notes, submissionId: randomUUID() };
+}
+
+function parseLead(value, site = DEFAULT_SITE) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const name = typeof value.name === 'string' ? value.name.trim() : '';
   const contact = typeof value.contact === 'string' ? value.contact.trim() : '';
   if (!name || name.length > 100 || !/[\p{L}]/u.test(name) || /[\d<>\r\n]/u.test(name)) return null;
   if (!/^\+\d{10,15}$/.test(contact) || value.consent !== true) return null;
   if (!Object.hasOwn(methods, value.contactMethod) || !Object.hasOwn(sources, value.source)) return null;
-  if (value.packageName !== undefined && !packages.has(value.packageName)) return null;
+  if (value.packageName !== undefined && (typeof value.packageName !== 'string' || !value.packageName.trim() || value.packageName.length > 120)) return null;
+  if (value.packageName !== undefined && site.packages.length && !site.packages.includes(value.packageName)) return null;
   if (value.phoneCountry !== undefined && (typeof value.phoneCountry !== 'string' || !/^[A-Za-z]{2}$/.test(value.phoneCountry))) return null;
-  if (value.consentVersion !== CONSENT_VERSION || !formIds.has(value.formId)) return null;
+  if (!site.consentVersions.includes(value.consentVersion)) return null;
+  if (typeof value.formId !== 'string' || !/^[A-Za-z0-9._-]{1,80}$/.test(value.formId)) return null;
+  if (site.formIds.length && !site.formIds.includes(value.formId)) return null;
   if (typeof value.submissionId !== 'string' || !/^[A-Za-z0-9-]{16,80}$/.test(value.submissionId)) return null;
   if (typeof value.consentAcceptedAt !== 'string' || !Number.isFinite(Date.parse(value.consentAcceptedAt))) return null;
   return {
@@ -43,9 +107,9 @@ function parseLead(value) {
   };
 }
 
-function notificationMessage(lead, serverReceivedAt) {
+function notificationMessage(lead, serverReceivedAt, siteHost) {
   return [
-    'Новая заявка с сайта photoprobiz', '',
+    `Новая заявка с сайта ${siteHost}`, '',
     `ID заявки: ${lead.submissionId}`,
     `Получено сервером: ${new Date(serverReceivedAt).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}`,
     'Имя и телефон сохранены в YDB.',
@@ -101,6 +165,8 @@ function publicLead(row) {
     phoneCountry: String(row?.phone_country || ''),
     status: ADMIN_STATUSES.has(row?.status) ? row.status : 'new',
     expiresAt: iso(row?.expires_at),
+    notes: String(row?.notes || ''),
+    manualSource: String(row?.manual_source || ''),
   };
 }
 
@@ -115,12 +181,14 @@ function decodeCursor(value) {
 
 function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegramTimeoutMs = 8000, leadStore } = {}) {
   const store = leadStore || createYdbStore({ env });
+  const configuredSites = siteConfigurations(env);
   return async function handler(event, context = {}) {
     const relayMode = env.DELIVERY_MODE === 'cloudflare-relay';
     const headers = Object.fromEntries(Object.entries(event?.headers || {}).map(([key, value]) => [key.toLowerCase(), value]));
     const params = queryParams(event);
     const origin = headers.origin;
-    const cors = allowedOrigins.has(origin) ? {
+    const currentSite = siteForOrigin(origin, configuredSites);
+    const cors = currentSite ? {
       'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
@@ -185,14 +253,25 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
       const renewedSession = createSession(env.ADMIN_SESSION_SECRET.trim());
       if (params.admin_api === 'leads' && event?.httpMethod === 'GET') {
         try {
+          const siteHost = typeof params.site === 'string' && HOST_PATTERN.test(params.site) ? params.site.toLowerCase() : '';
           const result = await store.list(context?.token?.access_token, {
             limit: Math.min(Number(params.limit) || 50, 100),
             cursor: decodeCursor(params.cursor),
+            siteHost,
           });
           return adminReply(200, { leads: result.rows.map(publicLead), hasMore: result.hasMore, session: renewedSession });
         } catch (error) {
           console.error('YDB_ADMIN_OPERATION_FAILED', safeYdbDiagnostic(error));
           return adminReply(502, { error: 'Could not load leads.' });
+        }
+      }
+      if (params.admin_api === 'sites' && event?.httpMethod === 'GET') {
+        try {
+          const storedHosts = typeof store.sites === 'function' ? await store.sites(context?.token?.access_token) : [];
+          return adminReply(200, { sites: crmSites(configuredSites, storedHosts), session: renewedSession });
+        } catch (error) {
+          console.error('YDB_ADMIN_OPERATION_FAILED', safeYdbDiagnostic(error));
+          return adminReply(502, { error: 'Could not load sites.' });
         }
       }
       if (params.admin_api === 'lead' && event?.httpMethod === 'GET') {
@@ -218,6 +297,34 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
           return adminReply(502, { error: 'Could not update status.' });
         }
       }
+      if (params.admin_api === 'manual' && event?.httpMethod === 'POST') {
+        const lead = parseManualLead(parseJsonBody(event, 8192));
+        if (!lead) return adminReply(400, { error: 'Invalid manual lead.' });
+        try {
+          const serverReceivedAt = new Date().toISOString();
+          await store.saveManual(lead, serverReceivedAt, context?.token?.access_token);
+          const row = await store.get(lead.submissionId, context?.token?.access_token);
+          return adminReply(201, { lead: publicLead(row), session: renewedSession });
+        } catch (error) {
+          console.error('YDB_ADMIN_OPERATION_FAILED', safeYdbDiagnostic(error));
+          return adminReply(502, { error: 'Could not create lead.' });
+        }
+      }
+      if (params.admin_api === 'notes' && event?.httpMethod === 'POST') {
+        const payload = parseJsonBody(event, 8192);
+        const notes = typeof payload?.notes === 'string' ? payload.notes.trim() : '';
+        const manualSource = typeof payload?.manualSource === 'string' ? payload.manualSource.trim() : '';
+        if (!/^[A-Za-z0-9-]{16,80}$/.test(payload?.submissionId || '') || notes.length > 3000 || manualSource.length > 120 || /[<>]/u.test(notes) || /[<>\r\n]/u.test(manualSource)) {
+          return adminReply(400, { error: 'Invalid lead notes.' });
+        }
+        try {
+          const updated = await store.updateMeta(payload.submissionId, notes, manualSource, context?.token?.access_token);
+          return updated ? adminReply(200, { ok: true, session: renewedSession }) : adminReply(404, { error: 'Lead not found.' });
+        } catch (error) {
+          console.error('YDB_ADMIN_OPERATION_FAILED', safeYdbDiagnostic(error));
+          return adminReply(502, { error: 'Could not update notes.' });
+        }
+      }
       return adminReply(404, { error: 'Admin endpoint not found.' });
     }
 
@@ -226,10 +333,11 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
       ok: true, service: 'photoprobiz-leads', provider: 'yandex-cloud',
       storage: 'ydb', databaseConfigured: store.databaseConfigured(),
       adminConfigured: adminConfigured(env),
+      crmSitesConfigured: configuredSites.length,
       deliveryMode: relayMode ? 'cloudflare-relay' : 'telegram',
       telegramConfigured: Boolean(env.TELEGRAM_BOT_TOKEN?.trim() && env.TELEGRAM_CHAT_ID?.trim()),
     });
-    if (!allowedOrigins.has(origin)) return reply(403, { error: 'Origin is not allowed.' });
+    if (!currentSite) return reply(403, { error: 'Origin is not allowed.' });
     if (event?.httpMethod === 'OPTIONS') return reply(204);
     if (event?.httpMethod !== 'POST') return reply(405, { error: 'Method not allowed.' });
     if (!/^application\/json(?:\s*;|$)/i.test(headers['content-type'] || '')) return reply(415, { error: 'Content-Type must be application/json.' });
@@ -239,11 +347,11 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
     if (Buffer.byteLength(raw) > MAX_BODY_BYTES) return reply(413, { error: 'Request is too large.' });
     let payload;
     try { payload = JSON.parse(raw); } catch { return reply(400, { error: 'Invalid JSON.' }); }
-    const lead = parseLead(payload);
+    const lead = parseLead(payload, currentSite);
     if (!lead) return reply(400, { error: 'Invalid lead data.' });
     const serverReceivedAt = new Date().toISOString();
     try {
-      await store.save(lead, serverReceivedAt, context?.token?.access_token);
+      await store.save(lead, serverReceivedAt, context?.token?.access_token, currentSite.siteHost);
     } catch (error) {
       const diagnostic = safeYdbDiagnostic(error);
       console.error('YDB_OPERATION_FAILED', diagnostic);
@@ -275,7 +383,7 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
             'X-Relay-Token': env.RELAY_TOKEN?.trim() || '',
           },
           body: JSON.stringify({
-            event: 'new_lead', site: 'photoprobiz.ru',
+            event: 'new_lead', site: currentSite.siteHost,
             submissionId: lead.submissionId, serverReceivedAt,
           }),
           signal: controller.signal,
@@ -299,7 +407,7 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
     try {
       const response = await fetchImpl(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: chatId, text: notificationMessage(lead, serverReceivedAt) }),
+        body: JSON.stringify({ chat_id: chatId, text: notificationMessage(lead, serverReceivedAt, currentSite.siteHost) }),
         signal: controller.signal,
       });
       const result = await response.json();
@@ -317,3 +425,7 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
 
 exports.handler = createHandler();
 exports.createHandler = createHandler;
+exports.crmSites = crmSites;
+exports.parseLead = parseLead;
+exports.parseManualLead = parseManualLead;
+exports.siteConfigurations = siteConfigurations;

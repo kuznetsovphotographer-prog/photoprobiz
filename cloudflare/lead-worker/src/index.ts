@@ -49,10 +49,10 @@ function parseNotification(payload: unknown) {
   const allowedKeys = new Set(['event', 'site', 'submissionId', 'serverReceivedAt']);
   if (Object.keys(notification).some((key) => !allowedKeys.has(key))) return null;
   const event = text(notification.event, 32);
-  const site = text(notification.site, 64);
+  const site = text(notification.site, 253).toLowerCase();
   const submissionId = text(notification.submissionId, 80);
   const serverReceivedAt = text(notification.serverReceivedAt, 40);
-  if (event !== 'new_lead' || site !== 'photoprobiz.ru') return null;
+  if (event !== 'new_lead' || !/^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i.test(site)) return null;
   if (!/^[A-Za-z0-9-]{16,80}$/.test(submissionId)) return null;
   if (!Number.isFinite(Date.parse(serverReceivedAt))) return null;
   return { event, site, submissionId, serverReceivedAt };
@@ -74,7 +74,7 @@ function parseMonitorNotification(payload: unknown) {
 
 function notificationMessage(notification: NonNullable<ReturnType<typeof parseNotification>>) {
   return [
-    'Новая заявка с сайта photoprobiz',
+    `Новая заявка с сайта ${notification.site}`,
     '',
     `ID заявки: ${notification.submissionId}`,
     `Получено сервером: ${new Date(notification.serverReceivedAt).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}`,
