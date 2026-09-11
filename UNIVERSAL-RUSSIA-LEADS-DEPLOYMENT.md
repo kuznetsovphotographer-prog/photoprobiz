@@ -588,7 +588,9 @@ RELAY_TOKEN=<общий секрет relay>
 
 Проверяйте `Origin`, `Content-Type` и `X-Relay-Token`, ограничивайте длину сообщения. Персональные данные клиентов в этот маршрут не передаются.
 
-Основной канал использует существующего Telegram-бота через Cloudflare. Для резервного канала создайте в Yandex Monitoring алерт по метрикам `functions_errors`/`serverless.functions.errors_per_second` функции монитора и `serverless.triggers.error_per_second` таймера. Получателем назначьте владельца облака и выберите email или Telegram через `@YandexCloudNotify_bot`. Если основной relay недоступен, необработанная ошибка функции активирует этот независимый канал.
+Основной канал использует существующего Telegram-бота через Cloudflare. Для резервного канала создайте в Yandex Monitoring алерт по метрике `functions_errors` функции монитора. Используйте фильтры `function='<имя функции монитора>'`, `cluster='default'`, `service='__serverless-functions__'` и текущий каталог. Установите `Warning > 0`, `Alarm > 0,5`, окно вычисления 5 минут и задержку 30 секунд. Включите уведомления для `Warning`, `Alarm`, `Error` и `Ok`, чтобы получить сообщение и об ошибке, и о восстановлении. Состояние `No data` отключите: при отсутствии ошибок эта метрика может не содержать точек, и это не должно создавать ложную тревогу.
+
+Получателем назначьте владельца облака и выберите email или Telegram через `@YandexCloudNotify_bot`. Если основной relay недоступен, необработанная ошибка функции активирует этот независимый канал. Такой резерв сообщает о сбое основного пути уведомления. Обычная недоступность сайта, о которой функция успешно сообщила в Telegram, сама по себе резервный email не вызывает.
 
 Для `@YandexCloudNotify_bot` владелец должен выполнить `/start`, скопировать одноразовый код и привязать Telegram в настройках Yandex Cloud. Этот шаг нельзя выполнять за владельца без доступа к его Telegram.
 
@@ -606,6 +608,8 @@ RELAY_TOKEN=<общий секрет relay>
 ```text
 Monitor Function: d4e58jcg3sjqbl1hc3ak
 Hourly Trigger: a1sroguru0c3afpll9v3
+Reserve email channel: fbe4m45u0ai126c8ie6s
+Reserve alert: monsihgbrbl0klc9l2ml
 Cron: 0 * ? * * *
 History TTL: 180 дней
 Failure threshold: 3
