@@ -175,16 +175,21 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
         return adminReply(200, { ok: true });
       }
       if (params.admin_api === 'session' && event?.httpMethod === 'GET') {
-        return adminReply(200, { authenticated: isAuthorized(headers, env) });
+        const authenticated = isAuthorized(headers, env);
+        return adminReply(200, {
+          authenticated,
+          ...(authenticated ? { session: createSession(env.ADMIN_SESSION_SECRET.trim()) } : {}),
+        });
       }
       if (!isAuthorized(headers, env)) return adminReply(401, { error: 'Authentication required.' });
+      const renewedSession = createSession(env.ADMIN_SESSION_SECRET.trim());
       if (params.admin_api === 'leads' && event?.httpMethod === 'GET') {
         try {
           const result = await store.list(context?.token?.access_token, {
             limit: Math.min(Number(params.limit) || 50, 100),
             cursor: decodeCursor(params.cursor),
           });
-          return adminReply(200, { leads: result.rows.map(publicLead), hasMore: result.hasMore });
+          return adminReply(200, { leads: result.rows.map(publicLead), hasMore: result.hasMore, session: renewedSession });
         } catch (error) {
           console.error('YDB_ADMIN_OPERATION_FAILED', safeYdbDiagnostic(error));
           return adminReply(502, { error: 'Could not load leads.' });
@@ -194,7 +199,7 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
         if (!/^[A-Za-z0-9-]{16,80}$/.test(params.id || '')) return adminReply(400, { error: 'Invalid lead ID.' });
         try {
           const row = await store.get(params.id, context?.token?.access_token);
-          return row ? adminReply(200, { lead: publicLead(row) }) : adminReply(404, { error: 'Lead not found.' });
+          return row ? adminReply(200, { lead: publicLead(row), session: renewedSession }) : adminReply(404, { error: 'Lead not found.' });
         } catch (error) {
           console.error('YDB_ADMIN_OPERATION_FAILED', safeYdbDiagnostic(error));
           return adminReply(502, { error: 'Could not load lead.' });
@@ -207,7 +212,7 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
         }
         try {
           await store.updateStatus(payload.submissionId, payload.status, context?.token?.access_token);
-          return adminReply(200, { ok: true });
+          return adminReply(200, { ok: true, session: renewedSession });
         } catch (error) {
           console.error('YDB_ADMIN_OPERATION_FAILED', safeYdbDiagnostic(error));
           return adminReply(502, { error: 'Could not update status.' });

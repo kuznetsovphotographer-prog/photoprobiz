@@ -2,7 +2,9 @@
 
 const { createHmac, randomBytes, scryptSync, timingSafeEqual } = require('node:crypto');
 
-const SESSION_SECONDS = 30 * 24 * 60 * 60;
+// Every successful cabinet request issues a fresh token, so the user is asked
+// for the password only after 90 days without using the cabinet.
+const SESSION_SECONDS = 90 * 24 * 60 * 60;
 
 function base64url(value) {
   return Buffer.from(value).toString('base64url');

@@ -58,6 +58,20 @@ function parseNotification(payload: unknown) {
   return { event, site, submissionId, serverReceivedAt };
 }
 
+function parseMonitorNotification(payload: unknown) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
+  const notification = payload as Record<string, unknown>;
+  const allowedKeys = new Set(['event', 'site', 'kind', 'message']);
+  if (Object.keys(notification).some((key) => !allowedKeys.has(key))) return null;
+  const event = text(notification.event, 32);
+  const site = text(notification.site, 64);
+  const kind = text(notification.kind, 16);
+  const message = text(notification.message, 3000);
+  if (event !== 'site_monitor' || site !== 'photoprobiz.ru') return null;
+  if (!new Set(['alert', 'recovery', 'daily']).has(kind) || !message) return null;
+  return { event, site, kind, message };
+}
+
 function notificationMessage(notification: NonNullable<ReturnType<typeof parseNotification>>) {
   return [
     'Новая заявка с сайта photoprobiz',
@@ -121,7 +135,7 @@ export default {
     const cors = corsHeaders(request);
     if (!cors) return json({ error: 'Origin is not allowed.' }, 403);
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
-    if (request.method !== 'POST' || url.pathname !== '/lead') {
+    if (request.method !== 'POST' || !new Set(['/lead', '/monitor']).has(url.pathname)) {
       return json({ error: 'Not found.' }, 404, cors);
     }
 
@@ -132,6 +146,19 @@ export default {
     try { payload = await request.json(); } catch { return json({ error: 'Invalid JSON.' }, 400, cors); }
     if (!sameSecret(request.headers.get('X-Relay-Token'), env.RELAY_TOKEN)) {
       return json({ error: 'Unauthorized.' }, 401, cors);
+    }
+    if (url.pathname === '/monitor') {
+      const notification = parseMonitorNotification(payload);
+      if (!notification) return json({ error: 'Invalid monitor notification data.' }, 400, cors);
+      if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
+        return json({ error: 'Telegram delivery is not configured yet.', code: 'TELEGRAM_NOT_CONFIGURED' }, 503, cors);
+      }
+      try {
+        await sendTelegramMessage(env, notification.message, null);
+        return json({ ok: true }, 200, cors);
+      } catch {
+        return json({ error: 'Could not deliver the monitor notification.' }, 502, cors);
+      }
     }
     const notification = parseNotification(payload);
     if (!notification) return json({ error: 'Invalid notification data.' }, 400, cors);

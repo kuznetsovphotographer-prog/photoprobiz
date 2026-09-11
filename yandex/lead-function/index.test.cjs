@@ -101,6 +101,8 @@ test('admin page is public shell but lead data requires a signed session', async
   assert.equal(listedBody.leads[0].name, lead.name);
   assert.equal(listedBody.leads[0].phone, lead.contact);
   assert.equal(listedBody.leads[0].serverReceivedAt, '2026-09-11T12:00:00.000Z');
+  assert.equal(typeof listedBody.session, 'string');
+  assert.notEqual(listedBody.session, session);
 
   const updated = await instance({
     httpMethod: 'POST', queryStringParameters: { admin_api: 'status' },

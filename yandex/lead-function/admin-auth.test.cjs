@@ -28,7 +28,8 @@ test('signed admin sessions expire and reject tampering', () => {
   assert.equal(verifySession(token, secret, now + 1000), true);
   assert.equal(verifySession(token + 'x', secret, now + 1000), false);
   assert.equal(verifySession(token, 'another-secret', now + 1000), false);
-  assert.equal(verifySession(token, secret, now + 31 * 24 * 60 * 60 * 1000), false);
+  assert.equal(verifySession(token, secret, now + 89 * 24 * 60 * 60 * 1000), true);
+  assert.equal(verifySession(token, secret, now + 91 * 24 * 60 * 60 * 1000), false);
 });
 
 test('admin authorization uses a custom session header supported by Yandex Functions', () => {
