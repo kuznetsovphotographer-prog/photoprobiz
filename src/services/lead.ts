@@ -1,5 +1,9 @@
 import { phoneCountries } from '../data/phoneCountries';
 import { PERSONAL_DATA_CONSENT_VERSION } from '../data/privacy';
+import {
+  DEVICE_TYPES, OS_FAMILIES,
+  type DeviceType, type OsFamily,
+} from './deviceProfile';
 
 export type ContactMethod = 'phone' | 'telegram' | 'whatsapp' | 'max_messenger';
 export type PackageName = 'Минимальный' | 'Базовый' | 'Полный';
@@ -16,6 +20,8 @@ export interface LeadInput {
   packageName?: PackageName;
   source: 'modal' | 'inline';
   phoneCountry?: string;
+  deviceType: DeviceType;
+  osFamily: OsFamily;
 }
 
 export type LeadErrors = Partial<Record<'name' | 'contact' | 'consent', string>>;
@@ -52,6 +58,9 @@ export function validateLead(lead: LeadInput): LeadErrors {
     || !Number.isFinite(acceptedAt)
     || !lead.submissionId
     || !lead.formId) errors.consent = 'Обязательное поле';
+  if (!DEVICE_TYPES.includes(lead.deviceType) || !OS_FAMILIES.includes(lead.osFamily)) {
+    errors.consent = 'Обязательное поле';
+  }
   return errors;
 }
 

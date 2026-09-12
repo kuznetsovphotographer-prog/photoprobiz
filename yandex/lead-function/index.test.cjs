@@ -1,8 +1,8 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { randomBytes, scryptSync } = require('node:crypto');
-const { createHandler } = require('./index.js');
-const { CONSENT_COLUMNS, CONSENT_TABLE, LEADS_COLUMNS, LEADS_TABLE, LEAD_META_COLUMNS, LEAD_META_TABLE, UPSERT_LEAD, UPSERT_MANUAL_LEAD, createYdbStore, storageRecord } = require('./storage.js');
+const { createHandler, publicLead } = require('./index.js');
+const { CONSENT_COLUMNS, CONSENT_TABLE, LEADS_COLUMNS, LEADS_TABLE, LEAD_META_COLUMNS, LEAD_META_TABLE, UPSERT_LEAD, UPSERT_MANUAL_LEAD, createYdbStore, ensureColumns, storageRecord } = require('./storage.js');
 
 const env = {
   ENDPOINT: 'grpcs://example.test:2135', DATABASE: '/test/database',
@@ -12,6 +12,7 @@ const lead = {
   name: 'Тест', contact: '+79990000000', contactMethod: 'phone', consent: true, source: 'modal', phoneCountry: 'RU',
   consentAcceptedAt: '2026-09-11T10:00:00.000Z', consentVersion: '2026-09-11',
   submissionId: '019a1234-5678-7000-8000-123456789abc', formId: 'modal-general',
+  deviceType: 'computer', osFamily: 'windows',
 };
 const event = (payload = lead) => ({ httpMethod: 'POST', headers: { Origin: 'https://photoprobiz.ru', 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
 const success = async () => ({ ok: true, json: async () => ({ ok: true }) });
@@ -25,13 +26,29 @@ test('consent rollout preserves the accepted document version and rejects unknow
     fetchImpl: success,
     leadStore: { databaseConfigured: () => true, save: async (value) => recordedVersions.push(value.consentVersion) },
   });
-  for (const consentVersion of ['2026-09-11', '2026-09-12']) {
+  for (const consentVersion of ['2026-09-11', '2026-09-12', '2026-09-12-2']) {
     const result = await handle(event({ ...lead, consentVersion }), context);
     assert.equal(result.statusCode, 200);
   }
   const rejected = await handle(event({ ...lead, consentVersion: 'unknown-version' }), context);
   assert.equal(rejected.statusCode, 400);
-  assert.deepEqual(recordedVersions, ['2026-09-11', '2026-09-12']);
+  assert.deepEqual(recordedVersions, ['2026-09-11', '2026-09-12', '2026-09-12-2']);
+});
+
+test('the current consent version requires supported coarse device information while old pages remain compatible', async () => {
+  const stored = [];
+  const handle = handler({ fetchImpl: success, leadStore: { databaseConfigured: () => true, save: async (value) => stored.push(value) } });
+  const current = { ...lead, consentVersion: '2026-09-12-2' };
+  assert.equal((await handle(event(current), context)).statusCode, 200);
+  const { deviceType: _deviceType, osFamily: _osFamily, ...withoutProfile } = current;
+  assert.equal((await handle(event(withoutProfile), context)).statusCode, 400);
+  assert.equal((await handle(event({ ...current, deviceType: 'watch' }), context)).statusCode, 400);
+  assert.equal((await handle(event({ ...current, osFamily: 'windows-11' }), context)).statusCode, 400);
+  assert.equal((await handle(event({ ...withoutProfile, consentVersion: '2026-09-12' }), context)).statusCode, 200);
+  assert.equal(stored[0].deviceType, 'computer');
+  assert.equal(stored[0].osFamily, 'windows');
+  assert.equal(stored[1].deviceType, 'unknown');
+  assert.equal(stored[1].osFamily, 'unknown');
 });
 
 function passwordHash(password) {
@@ -46,6 +63,7 @@ test('health works without connecting and exposes only configuration state', asy
   assert.equal(result.statusCode, 200);
   assert.equal(body.storage, 'ydb');
   assert.equal(body.databaseConfigured, true);
+  assert.equal(body.crmDatabasesConfigured, 1);
   assert.equal(body.telegramConfigured, true);
   assert.ok(!result.body.includes('test-token'));
 });
@@ -124,6 +142,8 @@ test('admin page is public shell but lead data requires a signed session', async
   assert.equal(listedBody.leads[0].name, lead.name);
   assert.equal(listedBody.leads[0].phone, lead.contact);
   assert.equal(listedBody.leads[0].serverReceivedAt, '2026-09-11T12:00:00.000Z');
+  assert.equal(listedBody.leads[0].deviceType, 'unknown');
+  assert.equal(listedBody.leads[0].osFamily, 'unknown');
   assert.equal(typeof listedBody.session, 'string');
   assert.notEqual(listedBody.session, session);
 
@@ -151,6 +171,13 @@ test('admin page is public shell but lead data requires a signed session', async
   }, context);
   assert.equal(notes.statusCode, 200);
   assert.deepEqual(noteUpdates, [{ id: lead.submissionId, notes: 'Позвонить в пятницу', manualSource: '' }]);
+});
+
+test('CRM public model exposes only supported coarse device values', () => {
+  assert.equal(publicLead({ device_type: 'tablet', os_family: 'ipados' }).deviceType, 'tablet');
+  assert.equal(publicLead({ device_type: 'tablet', os_family: 'ipados' }).osFamily, 'ipados');
+  assert.equal(publicLead({ device_type: 'watch', os_family: 'windows-11' }).deviceType, 'unknown');
+  assert.equal(publicLead({ device_type: 'watch', os_family: 'windows-11' }).osFamily, 'unknown');
 });
 
 test('a configured second site is identified by origin and stored under its own host', async () => {
@@ -332,6 +359,31 @@ test('storage records use separate one-year and three-year expirations', () => {
   assert.equal(record.leadExpiresAt.toISOString(), '2027-09-11T12:00:00.000Z');
   assert.equal(record.consentExpiresAt.toISOString(), '2029-09-11T12:00:00.000Z');
   assert.equal(record.phone, lead.contact);
+  assert.equal(record.deviceType, 'computer');
+  assert.equal(record.osFamily, 'windows');
+});
+
+test('existing YDB lead tables receive nullable device columns without rebuilding stored data', async () => {
+  const altered = [];
+  class Column { constructor(name, type) { this.name = name; this.type = type; } }
+  class AlterTableDescription {
+    constructor() { this.columns = []; }
+    withAddColumn(column) { this.columns.push(column); return this; }
+  }
+  const sdk = {
+    AlterTableDescription,
+    Column,
+    Types: { UTF8: { typeId: 'UTF8' }, optional: (type) => ({ optional: true, type }) },
+  };
+  const session = { alterTable: async (tableName, description) => altered.push({ tableName, description }) };
+  await ensureColumns(session, sdk, LEADS_TABLE, [['device_type', 'UTF8'], ['os_family', 'UTF8']], {
+    columns: LEADS_COLUMNS.filter(([name]) => !['device_type', 'os_family'].includes(name)).map(([name]) => ({ name })),
+  });
+  assert.equal(altered.length, 1);
+  assert.equal(altered[0].tableName, LEADS_TABLE);
+  assert.deepEqual(altered[0].description.columns.map(({ name, type }) => ({ name, optional: type.optional })), [
+    { name: 'device_type', optional: true }, { name: 'os_family', optional: true },
+  ]);
 });
 
 test('YDB store creates lead, consent and CRM metadata tables once and upserts both consent records', async () => {
@@ -389,6 +441,8 @@ test('YDB store creates lead, consent and CRM metadata tables once and upserts b
   assert.equal(queries.length, 2);
   assert.equal(queries[0].query, UPSERT_LEAD);
   assert.equal(queries[0].params.$phone.value, lead.contact);
+  assert.equal(queries[0].params.$device_type.value, 'computer');
+  assert.equal(queries[0].params.$os_family.value, 'windows');
   assert.equal(queries[0].params.$lead_expires_at.value.toISOString(), '2027-09-11T12:00:00.000Z');
   assert.equal(queries[0].params.$consent_expires_at.value.toISOString(), '2029-09-11T12:00:00.000Z');
 

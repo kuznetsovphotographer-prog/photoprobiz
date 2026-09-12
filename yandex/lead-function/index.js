@@ -1,7 +1,7 @@
 'use strict';
 
 const { randomUUID } = require('node:crypto');
-const { createYdbStore } = require('./storage.js');
+const { createCrmStore } = require('./crm-storage.js');
 const { adminPage } = require('./admin-page.js');
 const {
   configured: adminConfigured,
@@ -12,6 +12,9 @@ const {
 
 const methods = { phone: 'Телефон', telegram: 'Telegram', whatsapp: 'WhatsApp', max_messenger: 'Max' };
 const sources = { modal: 'Всплывающая форма', inline: 'Форма на странице' };
+const DEVICE_TYPES = new Set(['computer', 'phone', 'tablet', 'unknown']);
+const OS_FAMILIES = new Set(['windows', 'macos', 'android', 'ios', 'ipados', 'harmonyos', 'linux', 'chromeos', 'unknown']);
+const DEVICE_PROFILE_REQUIRED_CONSENT_VERSIONS = new Set(['2026-09-12-2']);
 const DEFAULT_SITE = {
   siteHost: 'photoprobiz.ru',
   label: 'Деловой фотограф',
@@ -21,7 +24,7 @@ const DEFAULT_SITE = {
     'http://127.0.0.1:4173', 'http://127.0.0.1:5173',
     'http://localhost:4173', 'http://localhost:5173',
   ],
-  consentVersions: ['2026-09-11', '2026-09-12'],
+  consentVersions: ['2026-09-11', '2026-09-12', '2026-09-12-2'],
   packages: ['Минимальный', 'Базовый', 'Полный'],
   formIds: ['homepage-inline', 'modal-general', 'modal-package-minimal', 'modal-package-base', 'modal-package-full'],
 };
@@ -65,8 +68,8 @@ function siteForOrigin(origin, configuredSites) {
   return null;
 }
 
-function crmSites(configuredSites, storedHosts = []) {
-  const labels = new Map([['manual.crm', 'Внесены вручную'], ...configuredSites.map((site) => [site.siteHost, site.label])]);
+function crmSites(configuredSites, storedHosts = [], extraLabels = {}) {
+  const labels = new Map([['manual.crm', 'Внесены вручную'], ...configuredSites.map((site) => [site.siteHost, site.label]), ...Object.entries(extraLabels)]);
   const hosts = new Set([...configuredSites.map((site) => site.siteHost), 'manual.crm', ...storedHosts]);
   return [...hosts].filter((host) => HOST_PATTERN.test(host)).sort().map((host) => ({ host, label: labels.get(host) || host }));
 }
@@ -99,11 +102,16 @@ function parseLead(value, site = DEFAULT_SITE) {
   if (site.formIds.length && !site.formIds.includes(value.formId)) return null;
   if (typeof value.submissionId !== 'string' || !/^[A-Za-z0-9-]{16,80}$/.test(value.submissionId)) return null;
   if (typeof value.consentAcceptedAt !== 'string' || !Number.isFinite(Date.parse(value.consentAcceptedAt))) return null;
+  const deviceProfileRequired = DEVICE_PROFILE_REQUIRED_CONSENT_VERSIONS.has(value.consentVersion);
+  if (deviceProfileRequired && (!DEVICE_TYPES.has(value.deviceType) || !OS_FAMILIES.has(value.osFamily))) return null;
+  if (value.deviceType !== undefined && !DEVICE_TYPES.has(value.deviceType)) return null;
+  if (value.osFamily !== undefined && !OS_FAMILIES.has(value.osFamily)) return null;
   return {
     name, contact, contactMethod: value.contactMethod, source: value.source,
     packageName: value.packageName, phoneCountry: value.phoneCountry,
     consentVersion: value.consentVersion, consentAcceptedAt: value.consentAcceptedAt,
     submissionId: value.submissionId, formId: value.formId,
+    deviceType: value.deviceType || 'unknown', osFamily: value.osFamily || 'unknown',
   };
 }
 
@@ -163,6 +171,8 @@ function publicLead(row) {
     contactMethod: String(row?.contact_method || ''),
     packageName: String(row?.package_name || ''),
     phoneCountry: String(row?.phone_country || ''),
+    deviceType: DEVICE_TYPES.has(row?.device_type) ? row.device_type : 'unknown',
+    osFamily: OS_FAMILIES.has(row?.os_family) ? row.os_family : 'unknown',
     status: ADMIN_STATUSES.has(row?.status) ? row.status : 'new',
     expiresAt: iso(row?.expires_at),
     notes: String(row?.notes || ''),
@@ -180,7 +190,7 @@ function decodeCursor(value) {
 }
 
 function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegramTimeoutMs = 8000, leadStore } = {}) {
-  const store = leadStore || createYdbStore({ env });
+  const store = leadStore || createCrmStore({ env });
   const configuredSites = siteConfigurations(env);
   return async function handler(event, context = {}) {
     const relayMode = env.DELIVERY_MODE === 'cloudflare-relay';
@@ -268,7 +278,8 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
       if (params.admin_api === 'sites' && event?.httpMethod === 'GET') {
         try {
           const storedHosts = typeof store.sites === 'function' ? await store.sites(context?.token?.access_token) : [];
-          return adminReply(200, { sites: crmSites(configuredSites, storedHosts), session: renewedSession });
+          return adminReply(200, { sites: crmSites(configuredSites, storedHosts,
+            typeof store.siteLabels === 'function' ? store.siteLabels() : {}), session: renewedSession });
         } catch (error) {
           console.error('YDB_ADMIN_OPERATION_FAILED', safeYdbDiagnostic(error));
           return adminReply(502, { error: 'Could not load sites.' });
@@ -334,6 +345,7 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
       storage: 'ydb', databaseConfigured: store.databaseConfigured(),
       adminConfigured: adminConfigured(env),
       crmSitesConfigured: configuredSites.length,
+      crmDatabasesConfigured: typeof store.databaseCount === 'function' ? store.databaseCount() : 1,
       deliveryMode: relayMode ? 'cloudflare-relay' : 'telegram',
       telegramConfigured: Boolean(env.TELEGRAM_BOT_TOKEN?.trim() && env.TELEGRAM_CHAT_ID?.trim()),
     });
@@ -429,3 +441,4 @@ exports.crmSites = crmSites;
 exports.parseLead = parseLead;
 exports.parseManualLead = parseManualLead;
 exports.siteConfigurations = siteConfigurations;
+exports.publicLead = publicLead;

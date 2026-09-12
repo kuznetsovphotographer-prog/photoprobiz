@@ -12,7 +12,7 @@
 - Формы отправляют персональные данные напрямую в Yandex Cloud Function и YDB Serverless `ru-central1`.
 - Cloudflare Worker и Telegram получают только обезличенное уведомление с ID заявки.
 - CRM-кабинет расположен в Yandex Cloud Function и защищён паролем со скользящей сессией 90 дней. Он объединяет сайты, ручные контакты, статусы и заметки.
-- Отдельная Yandex Cloud Function проверяет сайт раз в час; история хранится в YDB, основной канал — Telegram, резерв — Yandex Monitoring email.
+- Отдельная Yandex Cloud Function проверяет сайт каждый час с 08:00 до 23:00 МСК включительно (`0 5-20 ? * * *` UTC); история хранится в YDB, основной канал — Telegram, резерв — Yandex Monitoring email.
 - GraphQL/GraphiQL отсутствует; используются HTTPS endpoint и закрытые admin API.
 
 ## Обязательные инварианты

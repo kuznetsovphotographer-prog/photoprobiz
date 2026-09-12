@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createHttpLeadAdapter, mockLeadAdapter, submitLead, validateLead, type LeadInput } from './lead';
+import { classifyDevice } from './deviceProfile';
 
 const validLead: LeadInput = {
   name: 'Тест', contact: '+79991234567', contactMethod: 'phone', consent: true, source: 'modal',
-  consentAcceptedAt: '2026-09-12T10:00:00.000Z', consentVersion: '2026-09-12',
+  consentAcceptedAt: '2026-09-12T10:00:00.000Z', consentVersion: '2026-09-12-2',
   submissionId: '019a1234-5678-7000-8000-123456789abc', formId: 'modal-general',
+  deviceType: 'computer', osFamily: 'windows',
 };
 
 test('empty fields and unchecked consent return field-specific errors', () => {
@@ -22,6 +24,21 @@ test('consent evidence is required and must use the current document version', (
     { submissionId: '' },
     { formId: '' },
   ]) assert.equal(validateLead({ ...validLead, ...patch }).consent, 'Обязательное поле');
+});
+
+test('only supported coarse device and operating-system values can be sent', () => {
+  assert.deepEqual(validateLead(validLead), {});
+  assert.ok(validateLead({ ...validLead, deviceType: 'watch' as LeadInput['deviceType'] }).consent);
+  assert.ok(validateLead({ ...validLead, osFamily: 'windows-11' as LeadInput['osFamily'] }).consent);
+});
+
+test('device classification covers desktop, phone, tablet and iPad desktop mode', () => {
+  assert.deepEqual(classifyDevice({ userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', platform: 'Win32' }), { deviceType: 'computer', osFamily: 'windows' });
+  assert.deepEqual(classifyDevice({ userAgent: 'Mozilla/5.0 (Linux; Android 15; Pixel) AppleWebKit Mobile', platform: 'Linux armv8l' }), { deviceType: 'phone', osFamily: 'android' });
+  assert.deepEqual(classifyDevice({ userAgent: 'Mozilla/5.0 (Linux; Android 14; Tablet)', platform: 'Linux armv8l' }), { deviceType: 'tablet', osFamily: 'android' });
+  assert.deepEqual(classifyDevice({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15)', platform: 'MacIntel', maxTouchPoints: 5 }), { deviceType: 'tablet', osFamily: 'ipados' });
+  assert.deepEqual(classifyDevice({ userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Mobile', platform: 'iPhone' }), { deviceType: 'phone', osFamily: 'ios' });
+  assert.deepEqual(classifyDevice(undefined), { deviceType: 'unknown', osFamily: 'unknown' });
 });
 
 test('a short Russian number cannot pass just because the country prefix adds a digit', () => {

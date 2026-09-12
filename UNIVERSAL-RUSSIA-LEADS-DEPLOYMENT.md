@@ -601,7 +601,7 @@ RELAY_URL=https://<API_DOMAIN>/monitor
 RELAY_TOKEN=<общий секрет relay>
 ```
 
-Создайте timer trigger с расписанием `0 * ? * * *`: запуск в нулевую минуту каждого часа, время UTC. Назначьте триггеру сервисный аккаунт, а на функцию выдайте ему `functions.functionInvoker`. В action включите три повторные попытки с интервалом 60 секунд.
+Создайте активный timer trigger с расписанием `0 5-20 ? * * *`: запуск каждый час с 05:00 до 20:00 UTC, то есть с 08:00 до 23:00 по Москве включительно. Это 16 плановых запусков в сутки. Ночью проверок по расписанию нет, накопленное состояние инцидентов сохраняется до следующего запуска. Назначьте триггеру сервисный аккаунт, а на функцию выдайте ему `functions.functionInvoker`. В action включите три повторные попытки с интервалом 60 секунд.
 
 Правила эталона:
 
@@ -648,7 +648,8 @@ Monitor Function: d4e58jcg3sjqbl1hc3ak
 Hourly Trigger: a1sroguru0c3afpll9v3
 Reserve email channel: fbe4m45u0ai126c8ie6s
 Reserve alert: monsihgbrbl0klc9l2ml
-Cron: 0 * ? * * *
+Cron: 0 5-20 ? * * *
+Schedule: каждый час 08:00–23:00 Europe/Moscow включительно
 History TTL: 180 дней
 Failure threshold: 3
 Daily heartbeat: 10:00 Europe/Moscow

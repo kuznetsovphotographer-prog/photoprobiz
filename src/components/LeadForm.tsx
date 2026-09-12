@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { ContactIcon } from './ContactIcon';
 import { phoneCountries } from '../data/phoneCountries';
 import { PERSONAL_DATA_CONSENT_VERSION } from '../data/privacy';
+import { detectDeviceProfile } from '../services/deviceProfile';
 import {
   LEAD_SUCCESS_STORAGE_KEY, submitLead, validateLead,
   type ContactMethod, type LeadErrors, type LeadInput, type PackageName,
@@ -105,15 +106,19 @@ export function LeadForm({ variant = 'modal', packageName, basePath = './', onSu
   }, [inline, errors, submitError]);
 
   const formId = inline ? 'homepage-inline' : packageName ? packageFormIds[selectedPackage] : 'modal-general';
-  const getLead = (submissionId: string): LeadInput => ({
-    name, contact, contactMethod: method, consent, source: variant,
-    consentAcceptedAt,
-    consentVersion: PERSONAL_DATA_CONSENT_VERSION,
-    submissionId,
-    formId,
-    phoneCountry: country,
-    ...(packageName ? { packageName: selectedPackage } : {}),
-  });
+  const getLead = (submissionId: string): LeadInput => {
+    const deviceProfile = detectDeviceProfile();
+    return {
+      name, contact, contactMethod: method, consent, source: variant,
+      consentAcceptedAt,
+      consentVersion: PERSONAL_DATA_CONSENT_VERSION,
+      submissionId,
+      formId,
+      phoneCountry: country,
+      ...deviceProfile,
+      ...(packageName ? { packageName: selectedPackage } : {}),
+    };
+  };
 
   function updateContact(value: string) {
     let destination = countryData;

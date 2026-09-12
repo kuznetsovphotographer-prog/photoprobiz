@@ -63,7 +63,7 @@ npm run preview
 - `src/styles/base.css` и стили компонентов — общие правила, интерактивные состояния, доступность и собственные компоненты.
 - `src/data/assets.json` — соответствие исходных URL локальным оптимизированным файлам. Старые URL здесь являются справочными ключами; браузер их не запрашивает.
 - `src/data/galleries.json` — 17 галерей, 242 фотографии в исходном порядке, описания и responsive-варианты.
-- `src/components/LeadForm.tsx`, `src/services/lead.ts` — формы и отдельный транспорт заявок.
+- `src/components/LeadForm.tsx`, `src/services/lead.ts`, `src/services/deviceProfile.ts` — формы, отдельный транспорт заявок и локальное определение только укрупнённых категорий устройства/ОС.
 - `src/components/Dialog.tsx` — закрытие, Escape, ловушка фокуса, блокировка фона, вложенные окна и восстановление фокуса.
 - `src/data/privacy.ts`, `src/pages/ThankYouPage.tsx` — политика и благодарность.
 - `src/data/seo.json`, `scripts/prerender.tsx` — метаданные и предварительное построение HTML.
@@ -87,7 +87,7 @@ npm run preview
 
 ## Формы и production-транспорт
 
-Форма проверяет поля и явное согласие, блокирует повторную отправку во время обработки и после успешного ответа открывает страницу благодарности. В production workflow задаёт действующий URL Yandex Cloud Function через `VITE_LEAD_ENDPOINT`. Функция сначала сохраняет заявку и доказательство согласия в YDB `ru-central1`, затем передаёт Cloudflare Worker только ID и служебное время для обезличенного уведомления Telegram.
+Форма проверяет поля и явное согласие, блокирует повторную отправку во время обработки и после успешного ответа открывает страницу благодарности. Непосредственно перед отправкой она локально сводит браузерные признаки к типу устройства и семейству ОС. Полный User-Agent, версия браузера, модель устройства и аппаратные идентификаторы в payload не включаются. В production workflow задаёт действующий URL Yandex Cloud Function через `VITE_LEAD_ENDPOINT`. Функция сначала сохраняет заявку и доказательство согласия в YDB `ru-central1`, затем передаёт Cloudflare Worker только ID и служебное время для уведомления Telegram без контактных и технических данных заявки.
 
 Для локальной проверки реальной отправки задайте в `.env.local`:
 
@@ -95,7 +95,7 @@ npm run preview
 VITE_LEAD_ENDPOINT=https://functions.yandexcloud.net/d4e5ur2fo156lrcve6id
 ```
 
-Если переменная пуста, локальная версия использует mock и ничего не отправляет. Рабочий payload включает имя, телефон, способ связи, пакет, источник, страницу, идентификатор формы, время и версию согласия. Telegram Bot Token хранится только в Cloudflare Worker Secrets. Полная схема описана в [`PROJECT-STATUS.md`](PROJECT-STATUS.md) и [`YANDEX-CLOUD-YDB-PERSONAL-DATA-GUIDE.md`](YANDEX-CLOUD-YDB-PERSONAL-DATA-GUIDE.md).
+Если переменная пуста, локальная версия использует mock и ничего не отправляет. Рабочий payload включает имя, телефон, способ связи, пакет, источник, идентификатор формы, время и версию согласия, а также только `deviceType` (`computer`, `phone`, `tablet`, `unknown`) и `osFamily` из закрытого списка. Telegram Bot Token хранится только в Cloudflare Worker Secrets. Полная схема описана в [`PROJECT-STATUS.md`](PROJECT-STATUS.md) и [`YANDEX-CLOUD-YDB-PERSONAL-DATA-GUIDE.md`](YANDEX-CLOUD-YDB-PERSONAL-DATA-GUIDE.md).
 
 ## SEO
 

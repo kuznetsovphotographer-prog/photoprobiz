@@ -17,6 +17,8 @@ const LEADS_COLUMNS = [
   ['contact_method', 'UTF8'],
   ['package_name', 'UTF8'],
   ['phone_country', 'UTF8'],
+  ['device_type', 'UTF8'],
+  ['os_family', 'UTF8'],
   ['status', 'UTF8'],
   ['expires_at', 'TIMESTAMP'],
 ];
@@ -55,17 +57,19 @@ DECLARE $phone AS Utf8;
 DECLARE $contact_method AS Utf8;
 DECLARE $package_name AS Utf8;
 DECLARE $phone_country AS Utf8;
+DECLARE $device_type AS Utf8;
+DECLARE $os_family AS Utf8;
 DECLARE $lead_expires_at AS Timestamp;
 DECLARE $consent_expires_at AS Timestamp;
 
 UPSERT INTO ${LEADS_TABLE} (
   submission_id, server_received_at, consent_accepted_at, consent_version,
   form_id, source, site_host, name, phone, contact_method, package_name,
-  phone_country, status, expires_at
+  phone_country, device_type, os_family, status, expires_at
 ) VALUES (
   $submission_id, $server_received_at, $consent_accepted_at, $consent_version,
   $form_id, $source, $site_host, $name, $phone, $contact_method, $package_name,
-  $phone_country, "new", $lead_expires_at
+  $phone_country, $device_type, $os_family, "new", $lead_expires_at
 );
 
 UPSERT INTO ${CONSENT_TABLE} (
@@ -79,7 +83,7 @@ UPSERT INTO ${CONSENT_TABLE} (
 const LEAD_SELECT_COLUMNS = `
   submission_id, server_received_at, consent_accepted_at, consent_version,
   form_id, source, site_host, name, phone, contact_method, package_name,
-  phone_country, status, expires_at`;
+  phone_country, device_type, os_family, status, expires_at`;
 
 const LEAD_JOIN_SELECT_COLUMNS = `
   l.submission_id AS submission_id, l.server_received_at AS server_received_at,
@@ -87,6 +91,7 @@ const LEAD_JOIN_SELECT_COLUMNS = `
   l.form_id AS form_id, l.source AS source, l.site_host AS site_host,
   l.name AS name, l.phone AS phone, l.contact_method AS contact_method,
   l.package_name AS package_name, l.phone_country AS phone_country,
+  l.device_type AS device_type, l.os_family AS os_family,
   l.status AS status, l.expires_at AS expires_at`;
 
 const GET_LEAD = `
@@ -126,11 +131,11 @@ DECLARE $manual_source AS Utf8;
 UPSERT INTO ${LEADS_TABLE} (
   submission_id, server_received_at, consent_accepted_at, consent_version,
   form_id, source, site_host, name, phone, contact_method, package_name,
-  phone_country, status, expires_at
+  phone_country, device_type, os_family, status, expires_at
 ) VALUES (
   $submission_id, $server_received_at, $server_received_at, "",
   "crm-manual", "manual", $site_host, $name, $phone, $contact_method, "",
-  "", "new", $expires_at
+  "", "unknown", "unknown", "new", $expires_at
 );
 
 UPSERT INTO ${LEAD_META_TABLE} (submission_id, notes, manual_source, updated_at, expires_at)
@@ -157,6 +162,8 @@ function storageRecord(lead, serverReceivedAt, siteHost = 'photoprobiz.ru') {
     contactMethod: lead.contactMethod,
     packageName: lead.packageName || '',
     phoneCountry: lead.phoneCountry || '',
+    deviceType: lead.deviceType || 'unknown',
+    osFamily: lead.osFamily || 'unknown',
     leadExpiresAt: addUtcYears(receivedAt, 1),
     consentExpiresAt: addUtcYears(receivedAt, 3),
   };
@@ -186,8 +193,7 @@ function errorStatus(error) {
 
 async function ensureTable(session, ydb, tableName, columns) {
   try {
-    await session.describeTable(tableName);
-    return;
+    return await session.describeTable(tableName);
   } catch (error) {
     const status = errorStatus(error);
     if (status !== ydb.StatusCode.NOT_FOUND && status !== ydb.StatusCode.SCHEME_ERROR) {
@@ -197,12 +203,26 @@ async function ensureTable(session, ydb, tableName, columns) {
 
   try {
     await session.createTable(tableName, tableDescription(ydb, columns));
+    return null;
   } catch (error) {
     const status = errorStatus(error);
     if (status !== ydb.StatusCode.ALREADY_EXISTS && !/already exists|path exists|уже существует/i.test(String(error?.message))) {
       throw error;
     }
   }
+  return null;
+}
+
+async function ensureColumns(session, ydb, tableName, columns, existingDescription) {
+  if (!existingDescription || !Array.isArray(existingDescription.columns)) return;
+  const present = new Set(existingDescription.columns.map((column) => column?.name).filter(Boolean));
+  const missing = columns.filter(([name]) => !present.has(name));
+  if (!missing.length) return;
+  const alteration = new ydb.AlterTableDescription();
+  for (const [name, type] of missing) {
+    alteration.withAddColumn(new ydb.Column(name, ydb.Types.optional(ydb.Types[type])));
+  }
+  await session.alterTable(tableName, alteration);
 }
 
 function createYdbStore({ env = process.env, sdk } = {}) {
@@ -250,7 +270,11 @@ function createYdbStore({ env = process.env, sdk } = {}) {
     if (!schemaPromise) {
       const ydb = sdk || require('ydb-sdk');
       schemaPromise = activeDriver.tableClient.withSessionRetry(async (session) => {
-        await ensureTable(session, ydb, LEADS_TABLE, LEADS_COLUMNS);
+        const leadsDescription = await ensureTable(session, ydb, LEADS_TABLE, LEADS_COLUMNS);
+        await ensureColumns(session, ydb, LEADS_TABLE, [
+          ['device_type', 'UTF8'],
+          ['os_family', 'UTF8'],
+        ], leadsDescription);
         await ensureTable(session, ydb, CONSENT_TABLE, CONSENT_COLUMNS);
         await ensureTable(session, ydb, LEAD_META_TABLE, LEAD_META_COLUMNS);
       }, 10000).catch((error) => {
@@ -282,6 +306,8 @@ function createYdbStore({ env = process.env, sdk } = {}) {
         '$contact_method': ydb.TypedValues.utf8(record.contactMethod),
         '$package_name': ydb.TypedValues.utf8(record.packageName),
         '$phone_country': ydb.TypedValues.utf8(record.phoneCountry),
+        '$device_type': ydb.TypedValues.utf8(record.deviceType),
+        '$os_family': ydb.TypedValues.utf8(record.osFamily),
         '$lead_expires_at': ydb.TypedValues.timestamp(record.leadExpiresAt),
         '$consent_expires_at': ydb.TypedValues.timestamp(record.consentExpiresAt),
         });
@@ -467,6 +493,7 @@ module.exports = {
   addUtcYears,
   createYdbStore,
   ensureTable,
+  ensureColumns,
   errorStatus,
   storageRecord,
   tableDescription,
