@@ -189,6 +189,15 @@ function decodeCursor(value) {
   } catch { return undefined; }
 }
 
+function monthPeriod(value) {
+  if (typeof value !== 'string' || !/^\d{4}-(?:0[1-9]|1[0-2])$/.test(value)) return undefined;
+  const [year, month] = value.split('-').map(Number);
+  return {
+    from: new Date(Date.UTC(year, month - 1, 1, -3)).toISOString(),
+    to: new Date(Date.UTC(year, month, 1, -3)).toISOString(),
+  };
+}
+
 function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegramTimeoutMs = 8000, leadStore } = {}) {
   const store = leadStore || createCrmStore({ env });
   const configuredSites = siteConfigurations(env);
@@ -264,10 +273,12 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
       if (params.admin_api === 'leads' && event?.httpMethod === 'GET') {
         try {
           const siteHost = typeof params.site === 'string' && HOST_PATTERN.test(params.site) ? params.site.toLowerCase() : '';
+          if (params.period && !monthPeriod(params.period)) return adminReply(400, { error: 'Invalid period.' });
           const result = await store.list(context?.token?.access_token, {
             limit: Math.min(Number(params.limit) || 50, 100),
             cursor: decodeCursor(params.cursor),
             siteHost,
+            period: monthPeriod(params.period),
           });
           return adminReply(200, { leads: result.rows.map(publicLead), hasMore: result.hasMore, session: renewedSession });
         } catch (error) {
@@ -283,6 +294,20 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
         } catch (error) {
           console.error('YDB_ADMIN_OPERATION_FAILED', safeYdbDiagnostic(error));
           return adminReply(502, { error: 'Could not load sites.' });
+        }
+      }
+      if (params.admin_api === 'periods' && event?.httpMethod === 'GET') {
+        try {
+          const siteHost = typeof params.site === 'string' && HOST_PATTERN.test(params.site) ? params.site.toLowerCase() : '';
+          const dates = typeof store.periods === 'function' ? await store.periods(context?.token?.access_token, { siteHost }) : [];
+          const periods = [...new Set(dates.map((value) => {
+            const date = new Date(value);
+            return Number.isFinite(date.getTime()) ? new Date(date.getTime() + 3 * 60 * 60 * 1000).toISOString().slice(0, 7) : '';
+          }).filter((value) => /^\d{4}-\d{2}$/.test(value)))].sort().reverse();
+          return adminReply(200, { periods, session: renewedSession });
+        } catch (error) {
+          console.error('YDB_ADMIN_OPERATION_FAILED', safeYdbDiagnostic(error));
+          return adminReply(502, { error: 'Could not load periods.' });
         }
       }
       if (params.admin_api === 'lead' && event?.httpMethod === 'GET') {
@@ -334,6 +359,26 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
         } catch (error) {
           console.error('YDB_ADMIN_OPERATION_FAILED', safeYdbDiagnostic(error));
           return adminReply(502, { error: 'Could not update notes.' });
+        }
+      }
+      if (params.admin_api === 'delete' && event?.httpMethod === 'POST') {
+        const payload = parseJsonBody(event, 8192);
+        const submissionIds = payload?.submissionIds;
+        if (!Array.isArray(submissionIds) || submissionIds.length < 1 || submissionIds.length > 50
+          || new Set(submissionIds).size !== submissionIds.length
+          || submissionIds.some((id) => typeof id !== 'string' || !/^[A-Za-z0-9-]{16,80}$/.test(id))) {
+          return adminReply(400, { error: 'Invalid lead IDs.' });
+        }
+        try {
+          const result = await store.deleteMany(submissionIds, context?.token?.access_token);
+          const statusCode = result.failedIds.length ? (result.deletedIds.length ? 207 : 502) : 200;
+          return adminReply(statusCode, { ...result, session: renewedSession });
+        } catch (error) {
+          if (error?.code === 'AMBIGUOUS_LEAD_ID') {
+            return adminReply(409, { error: 'Lead ID exists in more than one database.' });
+          }
+          console.error('YDB_ADMIN_OPERATION_FAILED', safeYdbDiagnostic(error));
+          return adminReply(502, { error: 'Could not delete leads.', deletedIds: [], failedIds: submissionIds });
         }
       }
       return adminReply(404, { error: 'Admin endpoint not found.' });

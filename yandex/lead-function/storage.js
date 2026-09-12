@@ -108,6 +108,18 @@ UPDATE ${LEADS_TABLE}
 SET status = $status
 WHERE submission_id = $submission_id;`;
 
+const SELECT_EXISTING_LEAD_IDS = `
+DECLARE $submission_ids AS List<Utf8>;
+SELECT submission_id
+FROM ${LEADS_TABLE}
+WHERE submission_id IN $submission_ids;`;
+
+const DELETE_LEADS = `
+DECLARE $submission_ids AS List<Utf8>;
+DELETE FROM ${LEAD_META_TABLE} WHERE submission_id IN $submission_ids;
+DELETE FROM ${CONSENT_TABLE} WHERE submission_id IN $submission_ids;
+DELETE FROM ${LEADS_TABLE} WHERE submission_id IN $submission_ids;`;
+
 const UPSERT_LEAD_META = `
 DECLARE $submission_id AS Utf8;
 DECLARE $notes AS Utf8;
@@ -323,23 +335,28 @@ function createYdbStore({ env = process.env, sdk } = {}) {
     return ydb.TypedData.createNativeObjects(resultSet).map((row) => ({ ...row }));
   }
 
-  async function list(accessToken, { limit = 50, cursor, siteHost = '' } = {}) {
+  async function list(accessToken, { limit = 50, cursor, siteHost = '', period } = {}) {
     const ydb = sdk || require('ydb-sdk');
     const activeDriver = await getDriver(accessToken);
     await ensureSchema(activeDriver);
     const safeLimit = Math.max(1, Math.min(Number(limit) || 50, 100));
     const hasCursor = Boolean(cursor?.receivedAt && cursor?.submissionId);
+    const hasPeriod = Boolean(period?.from && period?.to);
     const queryText = `
 DECLARE $has_cursor AS Bool;
 DECLARE $before_at AS Timestamp;
 DECLARE $before_id AS Utf8;
 DECLARE $site_host AS Utf8;
+DECLARE $has_period AS Bool;
+DECLARE $period_from AS Timestamp;
+DECLARE $period_to AS Timestamp;
 SELECT ${LEAD_JOIN_SELECT_COLUMNS}
   , COALESCE(m.notes, "") AS notes
   , COALESCE(m.manual_source, "") AS manual_source
 FROM ${LEADS_TABLE} AS l
 LEFT JOIN ${LEAD_META_TABLE} AS m ON l.submission_id = m.submission_id
 WHERE ($site_host = "" OR l.site_host = $site_host)
+  AND (NOT $has_period OR (l.server_received_at >= $period_from AND l.server_received_at < $period_to))
   AND (
     NOT $has_cursor
     OR l.server_received_at < $before_at
@@ -355,6 +372,9 @@ LIMIT ${safeLimit + 1};`;
           '$before_at': ydb.TypedValues.timestamp(hasCursor ? new Date(cursor.receivedAt) : new Date(0)),
           '$before_id': ydb.TypedValues.utf8(hasCursor ? cursor.submissionId : ''),
           '$site_host': ydb.TypedValues.utf8(siteHost),
+          '$has_period': ydb.TypedValues.bool(hasPeriod),
+          '$period_from': ydb.TypedValues.timestamp(hasPeriod ? new Date(period.from) : new Date(0)),
+          '$period_to': ydb.TypedValues.timestamp(hasPeriod ? new Date(period.to) : new Date(0)),
         });
         const rows = nativeRows(ydb, result);
         return { rows: rows.slice(0, safeLimit), hasMore: rows.length > safeLimit };
@@ -376,6 +396,24 @@ LIMIT ${safeLimit + 1};`;
         return nativeRows(ydb, result)
           .map((row) => String(row.site_host || '').trim())
           .filter(Boolean);
+      }, 10000);
+    } catch (error) {
+      throw stageError(error, 'read');
+    }
+  }
+
+  async function periods(accessToken, { siteHost = '' } = {}) {
+    const ydb = sdk || require('ydb-sdk');
+    const activeDriver = await getDriver(accessToken);
+    await ensureSchema(activeDriver);
+    try {
+      return await activeDriver.tableClient.withSessionRetry(async (session) => {
+        const query = await session.prepareQuery(`DECLARE $site_host AS Utf8;
+SELECT server_received_at FROM ${LEADS_TABLE}
+WHERE ($site_host = "" OR site_host = $site_host)
+ORDER BY server_received_at DESC;`);
+        const result = await session.executeQuery(query, { '$site_host': ydb.TypedValues.utf8(siteHost) });
+        return nativeRows(ydb, result).map((row) => row.server_received_at);
       }, 10000);
     } catch (error) {
       throw stageError(error, 'read');
@@ -473,12 +511,48 @@ LIMIT 1;`);
     }
   }
 
-  return { databaseConfigured, get, list, save, saveManual, sites, updateMeta, updateStatus };
+  async function existingIds(submissionIds, accessToken) {
+    if (!submissionIds.length) return [];
+    const ydb = sdk || require('ydb-sdk');
+    const activeDriver = await getDriver(accessToken);
+    await ensureSchema(activeDriver);
+    try {
+      return await activeDriver.tableClient.withSessionRetry(async (session) => {
+        const query = await session.prepareQuery(SELECT_EXISTING_LEAD_IDS);
+        const result = await session.executeQuery(query, {
+          '$submission_ids': ydb.TypedValues.list(ydb.Types.UTF8, submissionIds),
+        });
+        return nativeRows(ydb, result).map((row) => String(row.submission_id));
+      }, 10000);
+    } catch (error) {
+      throw stageError(error, 'read');
+    }
+  }
+
+  async function deleteMany(submissionIds, accessToken) {
+    if (!submissionIds.length) return;
+    const ydb = sdk || require('ydb-sdk');
+    const activeDriver = await getDriver(accessToken);
+    await ensureSchema(activeDriver);
+    try {
+      await activeDriver.tableClient.withSessionRetry(async (session) => {
+        const query = await session.prepareQuery(DELETE_LEADS);
+        await session.executeQuery(query, {
+          '$submission_ids': ydb.TypedValues.list(ydb.Types.UTF8, submissionIds),
+        });
+      }, 10000);
+    } catch (error) {
+      throw stageError(error, 'write');
+    }
+  }
+
+  return { databaseConfigured, deleteMany, existingIds, get, list, periods, save, saveManual, sites, updateMeta, updateStatus };
 }
 
 module.exports = {
   CONSENT_COLUMNS,
   CONSENT_TABLE,
+  DELETE_LEADS,
   GET_LEAD,
   LEADS_COLUMNS,
   LEADS_TABLE,
@@ -486,6 +560,7 @@ module.exports = {
   LEAD_META_COLUMNS,
   LEAD_META_TABLE,
   LEAD_SELECT_COLUMNS,
+  SELECT_EXISTING_LEAD_IDS,
   UPDATE_LEAD_STATUS,
   UPSERT_LEAD_META,
   UPSERT_MANUAL_LEAD,

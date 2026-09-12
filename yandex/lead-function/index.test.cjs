@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { randomBytes, scryptSync } = require('node:crypto');
 const { createHandler, publicLead } = require('./index.js');
-const { CONSENT_COLUMNS, CONSENT_TABLE, LEADS_COLUMNS, LEADS_TABLE, LEAD_META_COLUMNS, LEAD_META_TABLE, UPSERT_LEAD, UPSERT_MANUAL_LEAD, createYdbStore, ensureColumns, storageRecord } = require('./storage.js');
+const { CONSENT_COLUMNS, CONSENT_TABLE, DELETE_LEADS, LEADS_COLUMNS, LEADS_TABLE, LEAD_META_COLUMNS, LEAD_META_TABLE, UPSERT_LEAD, UPSERT_MANUAL_LEAD, createYdbStore, ensureColumns, storageRecord } = require('./storage.js');
 
 const env = {
   ENDPOINT: 'grpcs://example.test:2135', DATABASE: '/test/database',
@@ -114,6 +114,11 @@ test('admin page is public shell but lead data requires a signed session', async
   assert.ok(page.body.includes('Александр · CRM'));
   assert.ok(page.body.includes('Добавить клиента'));
   assert.ok(page.body.includes('Моя заметка'));
+  assert.ok(page.body.includes('Удалить заявку'));
+  assert.ok(page.body.includes('Выбрать все'));
+  assert.ok(page.body.includes('https://max.ru/'));
+  assert.ok(page.body.includes('Фильтр по месяцу'));
+  assert.ok(page.body.includes('@media(max-width:1024px)'));
   assert.ok(!page.body.includes(lead.contact));
 
   const unauthorized = await instance({ httpMethod: 'GET', queryStringParameters: { admin_api: 'leads' }, headers: {} }, context);
@@ -178,6 +183,81 @@ test('CRM public model exposes only supported coarse device values', () => {
   assert.equal(publicLead({ device_type: 'tablet', os_family: 'ipados' }).osFamily, 'ipados');
   assert.equal(publicLead({ device_type: 'watch', os_family: 'windows-11' }).deviceType, 'unknown');
   assert.equal(publicLead({ device_type: 'watch', os_family: 'windows-11' }).osFamily, 'unknown');
+});
+
+test('signed admin delete API enforces origin, auth, unique valid IDs and limit', async () => {
+  const adminEnv = {
+    ...env,
+    ADMIN_BASE_URL: 'https://functions.yandexcloud.net/test-function-id',
+    ADMIN_PASSWORD_SCRYPT: passwordHash('delete-password'),
+    ADMIN_SESSION_SECRET: 'delete-test-admin-session-secret-at-least-32-characters',
+  };
+  const deletedBatches = [];
+  const instance = createHandler({ env: adminEnv, leadStore: {
+    databaseConfigured: () => true,
+    deleteMany: async (ids) => { deletedBatches.push(ids); return { deletedIds: ids, failedIds: [] }; },
+  } });
+  const login = await instance({
+    httpMethod: 'POST', queryStringParameters: { admin_api: 'login' },
+    headers: { Origin: 'https://functions.yandexcloud.net' }, body: JSON.stringify({ password: 'delete-password' }),
+  }, context);
+  const session = JSON.parse(login.body).session;
+  const base = { httpMethod: 'POST', queryStringParameters: { admin_api: 'delete' }, body: '' };
+  const deniedOrigin = await instance({ ...base, headers: { Origin: 'https://example.org', 'X-Admin-Session': session }, body: JSON.stringify({ submissionIds: [lead.submissionId] }) }, context);
+  assert.equal(deniedOrigin.statusCode, 403);
+  const deniedAuth = await instance({ ...base, headers: { Origin: 'https://functions.yandexcloud.net' }, body: JSON.stringify({ submissionIds: [lead.submissionId] }) }, context);
+  assert.equal(deniedAuth.statusCode, 401);
+  for (const submissionIds of [[], ['bad'], [lead.submissionId, lead.submissionId], Array.from({ length: 51 }, (_, index) => `valid-id-123456-${index}`)]) {
+    const response = await instance({ ...base, headers: { Origin: 'https://functions.yandexcloud.net', 'X-Admin-Session': session }, body: JSON.stringify({ submissionIds }) }, context);
+    assert.equal(response.statusCode, 400);
+  }
+  const success = await instance({ ...base, headers: { Origin: 'https://functions.yandexcloud.net', 'X-Admin-Session': session }, body: JSON.stringify({ submissionIds: [lead.submissionId] }) }, context);
+  assert.equal(success.statusCode, 200);
+  assert.deepEqual(JSON.parse(success.body).deletedIds, [lead.submissionId]);
+  assert.deepEqual(deletedBatches, [[lead.submissionId]]);
+});
+
+test('admin delete API reports partial failures and rejects database collisions', async () => {
+  const adminEnv = {
+    ...env,
+    ADMIN_BASE_URL: 'https://functions.yandexcloud.net/test-function-id',
+    ADMIN_PASSWORD_SCRYPT: passwordHash('delete-password'),
+    ADMIN_SESSION_SECRET: 'delete-test-admin-session-secret-at-least-32-characters',
+  };
+  async function signed(store) {
+    const instance = createHandler({ env: adminEnv, leadStore: store });
+    const login = await instance({ httpMethod: 'POST', queryStringParameters: { admin_api: 'login' }, headers: { Origin: 'https://functions.yandexcloud.net' }, body: JSON.stringify({ password: 'delete-password' }) }, context);
+    return { instance, session: JSON.parse(login.body).session };
+  }
+  const partial = await signed({ databaseConfigured: () => true, deleteMany: async (ids) => ({ deletedIds: [ids[0]], failedIds: [ids[1]] }) });
+  const partialResponse = await partial.instance({ httpMethod: 'POST', queryStringParameters: { admin_api: 'delete' }, headers: { Origin: 'https://functions.yandexcloud.net', 'X-Admin-Session': partial.session }, body: JSON.stringify({ submissionIds: [lead.submissionId, 'another-valid-id-1234'] }) }, context);
+  assert.equal(partialResponse.statusCode, 207);
+  assert.deepEqual(JSON.parse(partialResponse.body).failedIds, ['another-valid-id-1234']);
+  const collisionError = Object.assign(new Error('collision'), { code: 'AMBIGUOUS_LEAD_ID' });
+  const collision = await signed({ databaseConfigured: () => true, deleteMany: async () => { throw collisionError; } });
+  const collisionResponse = await collision.instance({ httpMethod: 'POST', queryStringParameters: { admin_api: 'delete' }, headers: { Origin: 'https://functions.yandexcloud.net', 'X-Admin-Session': collision.session }, body: JSON.stringify({ submissionIds: [lead.submissionId] }) }, context);
+  assert.equal(collisionResponse.statusCode, 409);
+});
+
+test('admin periods API groups stored timestamps by Moscow calendar month', async () => {
+  const adminEnv = {
+    ...env,
+    ADMIN_BASE_URL: 'https://functions.yandexcloud.net/test-function-id',
+    ADMIN_PASSWORD_SCRYPT: passwordHash('period-password'),
+    ADMIN_SESSION_SECRET: 'period-test-admin-session-secret-at-least-32-characters',
+  };
+  const instance = createHandler({ env: adminEnv, leadStore: {
+    databaseConfigured: () => true,
+    periods: async (_token, options) => {
+      assert.equal(options.siteHost, 'photoprobiz.ru');
+      return [new Date('2026-08-31T21:30:00Z'), new Date('2026-09-30T20:59:00Z'), new Date('2026-09-30T21:00:00Z')];
+    },
+  } });
+  const login = await instance({ httpMethod: 'POST', queryStringParameters: { admin_api: 'login' }, headers: { Origin: 'https://functions.yandexcloud.net' }, body: JSON.stringify({ password: 'period-password' }) }, context);
+  const session = JSON.parse(login.body).session;
+  const response = await instance({ httpMethod: 'GET', queryStringParameters: { admin_api: 'periods', site: 'photoprobiz.ru' }, headers: { 'X-Admin-Session': session } }, context);
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(JSON.parse(response.body).periods, ['2026-10', '2026-09']);
 });
 
 test('a configured second site is identified by origin and stored under its own host', async () => {
@@ -423,7 +503,7 @@ test('YDB store creates lead, consent and CRM metadata tables once and upserts b
     StatusCode: { SCHEME_ERROR: 400070, ALREADY_EXISTS: 400130, NOT_FOUND: 400140 },
     TableDescription,
     TokenAuthService,
-    TypedValues: { utf8: typed('utf8'), timestamp: typed('timestamp') },
+    TypedValues: { utf8: typed('utf8'), timestamp: typed('timestamp'), list: (type, value) => ({ type: 'list', itemType: type, value }) },
     Types: { UTF8: { typeId: 'UTF8' }, TIMESTAMP: { typeId: 'TIMESTAMP' } },
   };
   const store = createYdbStore({ env, sdk });
@@ -451,4 +531,11 @@ test('YDB store creates lead, consent and CRM metadata tables once and upserts b
   assert.equal(queries[2].query, UPSERT_MANUAL_LEAD);
   assert.equal(queries[2].params.$site_host.value, 'manual.crm');
   assert.equal(queries[2].params.$notes.value, 'Позвонить');
+
+  await store.deleteMany([lead.submissionId], context.token.access_token);
+  assert.equal(queries[3].query, DELETE_LEADS);
+  assert.deepEqual(queries[3].params.$submission_ids.value, [lead.submissionId]);
+  assert.match(queries[3].query, /DELETE FROM lead_meta/);
+  assert.match(queries[3].query, /DELETE FROM consent_events/);
+  assert.match(queries[3].query, /DELETE FROM leads/);
 });

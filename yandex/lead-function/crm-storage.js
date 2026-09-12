@@ -14,6 +14,11 @@ const INTERIORS_SELECT = `
   COALESCE(l.device_type, "unknown") AS device_type,
   COALESCE(l.os_family, "unknown") AS os_family,
   l.status AS status, l.expires_at AS expires_at`;
+const INTERIORS_SELECT_EXISTING_IDS = 'DECLARE $ids AS List<Utf8>; SELECT submission_id FROM leads WHERE submission_id IN $ids;';
+const INTERIORS_DELETE_LEADS = `DECLARE $ids AS List<Utf8>;
+DELETE FROM lead_meta WHERE submission_id IN $ids;
+DELETE FROM consent_events WHERE submission_id IN $ids;
+DELETE FROM leads WHERE submission_id IN $ids;`;
 
 function estimateLabel(value) {
   try {
@@ -81,23 +86,30 @@ function createInteriorsStore({ endpoint, database, sdk } = {}) {
     catch (error) { throw stageError(error, stage); }
   }
 
-  async function list(accessToken, { limit = 50, cursor } = {}) {
+  async function list(accessToken, { limit = 50, cursor, period } = {}) {
     const ydb = sdk || require('ydb-sdk');
     const safeLimit = Math.max(1, Math.min(Number(limit) || 50, 100));
     const hasCursor = Boolean(cursor?.receivedAt && cursor?.submissionId);
+    const hasPeriod = Boolean(period?.from && period?.to);
     const result = await run(accessToken, async (session) => {
       const query = await session.prepareQuery(`
 DECLARE $has_cursor AS Bool; DECLARE $before_at AS Timestamp; DECLARE $before_id AS Utf8;
+DECLARE $has_period AS Bool; DECLARE $period_from AS Timestamp; DECLARE $period_to AS Timestamp;
 SELECT ${INTERIORS_SELECT}, COALESCE(m.notes, "") AS notes, COALESCE(m.manual_source, "") AS manual_source
 FROM leads AS l INNER JOIN consent_events AS c ON l.submission_id = c.submission_id
 LEFT JOIN lead_meta AS m ON l.submission_id = m.submission_id
-WHERE l.site_host = "${INTERIORS_HOST}" AND (NOT $has_cursor OR l.server_received_at < $before_at
+WHERE l.site_host = "${INTERIORS_HOST}"
+AND (NOT $has_period OR (l.server_received_at >= $period_from AND l.server_received_at < $period_to))
+AND (NOT $has_cursor OR l.server_received_at < $before_at
   OR (l.server_received_at = $before_at AND l.submission_id < $before_id))
 ORDER BY l.server_received_at DESC, l.submission_id DESC LIMIT ${safeLimit + 1};`);
       return session.executeQuery(query, {
         '$has_cursor': ydb.TypedValues.bool(hasCursor),
         '$before_at': ydb.TypedValues.timestamp(hasCursor ? new Date(cursor.receivedAt) : new Date(0)),
         '$before_id': ydb.TypedValues.utf8(hasCursor ? cursor.submissionId : ''),
+        '$has_period': ydb.TypedValues.bool(hasPeriod),
+        '$period_from': ydb.TypedValues.timestamp(hasPeriod ? new Date(period.from) : new Date(0)),
+        '$period_to': ydb.TypedValues.timestamp(hasPeriod ? new Date(period.to) : new Date(0)),
       });
     });
     const rows = result ? nativeRows(ydb, result) : [];
@@ -142,7 +154,36 @@ VALUES ($id, $notes, $source, $updated, $expires);`);
     }, 'write');
     return true;
   }
-  return { configured, get, list, updateMeta, updateStatus };
+
+  async function periods(accessToken) {
+    const ydb = sdk || require('ydb-sdk');
+    const result = await run(accessToken, async (session) => {
+      const query = await session.prepareQuery(`SELECT server_received_at FROM leads
+WHERE site_host = "${INTERIORS_HOST}" ORDER BY server_received_at DESC;`);
+      return session.executeQuery(query);
+    });
+    return result ? nativeRows(ydb, result).map((row) => row.server_received_at) : [];
+  }
+
+  async function existingIds(submissionIds, accessToken) {
+    if (!submissionIds.length) return [];
+    const ydb = sdk || require('ydb-sdk');
+    const result = await run(accessToken, async (session) => {
+      const query = await session.prepareQuery(INTERIORS_SELECT_EXISTING_IDS);
+      return session.executeQuery(query, { '$ids': ydb.TypedValues.list(ydb.Types.UTF8, submissionIds) });
+    });
+    return result ? nativeRows(ydb, result).map((row) => String(row.submission_id)) : [];
+  }
+
+  async function deleteMany(submissionIds, accessToken) {
+    if (!submissionIds.length) return;
+    const ydb = sdk || require('ydb-sdk');
+    await run(accessToken, async (session) => {
+      const query = await session.prepareQuery(INTERIORS_DELETE_LEADS);
+      return session.executeQuery(query, { '$ids': ydb.TypedValues.list(ydb.Types.UTF8, submissionIds) });
+    }, 'write');
+  }
+  return { configured, deleteMany, existingIds, get, list, periods, updateMeta, updateStatus };
 }
 
 function createCrmStore({ env = process.env, sdk, primaryStore, interiorsStore } = {}) {
@@ -159,6 +200,12 @@ function createCrmStore({ env = process.env, sdk, primaryStore, interiorsStore }
     siteLabels: () => enabled() ? { [INTERIORS_HOST]: INTERIORS_LABEL } : {},
     save: (...args) => primary.save(...args), saveManual: (...args) => primary.saveManual(...args),
     async sites(token) { const hosts = await primary.sites(token); return enabled() ? [...new Set([...hosts, INTERIORS_HOST])] : hosts; },
+    async periods(token, options = {}) {
+      if (options.siteHost === INTERIORS_HOST) return enabled() ? interiors.periods(token) : [];
+      if (options.siteHost) return primary.periods(token, options);
+      const values = await Promise.all([primary.periods(token, options), ...(enabled() ? [interiors.periods(token)] : [])]);
+      return values.flat();
+    },
     async list(token, options = {}) {
       if (options.siteHost === INTERIORS_HOST) return enabled() ? interiors.list(token, options) : { rows: [], hasMore: false };
       if (options.siteHost) return primary.list(token, options);
@@ -173,7 +220,30 @@ function createCrmStore({ env = process.env, sdk, primaryStore, interiorsStore }
     async get(id, token) { return (await owner(id, token))?.row || null; },
     async updateStatus(id, status, token) { const target = await owner(id, token); if (!target) return false; await target.store.updateStatus(id, status, token); return true; },
     async updateMeta(id, notes, source, token) { const target = await owner(id, token); return target ? target.store.updateMeta(id, notes, source, token) : false; },
+    async deleteMany(ids, token) {
+      const [primaryIds, interiorIds] = await Promise.all([
+        primary.existingIds(ids, token),
+        enabled() ? interiors.existingIds(ids, token) : [],
+      ]);
+      const primarySet = new Set(primaryIds);
+      const interiorSet = new Set(interiorIds);
+      const collision = ids.find((id) => primarySet.has(id) && interiorSet.has(id));
+      if (collision) {
+        throw stageError(Object.assign(new Error('Ambiguous lead ID.'), { code: 'AMBIGUOUS_LEAD_ID' }), 'read');
+      }
+      const groups = [
+        { ids: ids.filter((id) => primarySet.has(id)), store: primary },
+        { ids: ids.filter((id) => interiorSet.has(id)), store: interiors },
+      ].filter((group) => group.ids.length);
+      const results = await Promise.allSettled(groups.map((group) => group.store.deleteMany(group.ids, token)));
+      const deleted = new Set(ids.filter((id) => !primarySet.has(id) && !interiorSet.has(id)));
+      const failed = new Set();
+      results.forEach((result, index) => {
+        groups[index].ids.forEach((id) => (result.status === 'fulfilled' ? deleted : failed).add(id));
+      });
+      return { deletedIds: ids.filter((id) => deleted.has(id)), failedIds: ids.filter((id) => failed.has(id)) };
+    },
   };
 }
 
-module.exports = { INTERIORS_HOST, INTERIORS_LABEL, INTERIORS_SELECT, createCrmStore, createInteriorsStore, estimateLabel };
+module.exports = { INTERIORS_DELETE_LEADS, INTERIORS_HOST, INTERIORS_LABEL, INTERIORS_SELECT, INTERIORS_SELECT_EXISTING_IDS, createCrmStore, createInteriorsStore, estimateLabel };
