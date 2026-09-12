@@ -40,6 +40,7 @@ const LEAD_META_COLUMNS = [
   ['submission_id', 'UTF8'],
   ['notes', 'UTF8'],
   ['manual_source', 'UTF8'],
+  ['revenue_rub', 'UINT64'],
   ['updated_at', 'TIMESTAMP'],
   ['expires_at', 'TIMESTAMP'],
 ];
@@ -124,10 +125,11 @@ const UPSERT_LEAD_META = `
 DECLARE $submission_id AS Utf8;
 DECLARE $notes AS Utf8;
 DECLARE $manual_source AS Utf8;
+DECLARE $revenue_rub AS Uint64;
 DECLARE $updated_at AS Timestamp;
 DECLARE $expires_at AS Timestamp;
-UPSERT INTO ${LEAD_META_TABLE} (submission_id, notes, manual_source, updated_at, expires_at)
-VALUES ($submission_id, $notes, $manual_source, $updated_at, $expires_at);`;
+UPSERT INTO ${LEAD_META_TABLE} (submission_id, notes, manual_source, revenue_rub, updated_at, expires_at)
+VALUES ($submission_id, $notes, $manual_source, $revenue_rub, $updated_at, $expires_at);`;
 
 const UPSERT_MANUAL_LEAD = `
 DECLARE $submission_id AS Utf8;
@@ -139,6 +141,7 @@ DECLARE $contact_method AS Utf8;
 DECLARE $expires_at AS Timestamp;
 DECLARE $notes AS Utf8;
 DECLARE $manual_source AS Utf8;
+DECLARE $revenue_rub AS Uint64;
 
 UPSERT INTO ${LEADS_TABLE} (
   submission_id, server_received_at, consent_accepted_at, consent_version,
@@ -150,8 +153,8 @@ UPSERT INTO ${LEADS_TABLE} (
   "", "unknown", "unknown", "new", $expires_at
 );
 
-UPSERT INTO ${LEAD_META_TABLE} (submission_id, notes, manual_source, updated_at, expires_at)
-VALUES ($submission_id, $notes, $manual_source, $server_received_at, $expires_at);`;
+UPSERT INTO ${LEAD_META_TABLE} (submission_id, notes, manual_source, revenue_rub, updated_at, expires_at)
+VALUES ($submission_id, $notes, $manual_source, $revenue_rub, $server_received_at, $expires_at);`;
 
 function addUtcYears(value, years) {
   const result = new Date(value);
@@ -288,7 +291,10 @@ function createYdbStore({ env = process.env, sdk } = {}) {
           ['os_family', 'UTF8'],
         ], leadsDescription);
         await ensureTable(session, ydb, CONSENT_TABLE, CONSENT_COLUMNS);
-        await ensureTable(session, ydb, LEAD_META_TABLE, LEAD_META_COLUMNS);
+        const metaDescription = await ensureTable(session, ydb, LEAD_META_TABLE, LEAD_META_COLUMNS);
+        await ensureColumns(session, ydb, LEAD_META_TABLE, [
+          ['revenue_rub', 'UINT64'],
+        ], metaDescription);
       }, 10000).catch((error) => {
         schemaPromise = undefined;
         throw stageError(error, 'schema');
@@ -353,6 +359,7 @@ DECLARE $period_to AS Timestamp;
 SELECT ${LEAD_JOIN_SELECT_COLUMNS}
   , COALESCE(m.notes, "") AS notes
   , COALESCE(m.manual_source, "") AS manual_source
+  , COALESCE(m.revenue_rub, CAST(0 AS Uint64)) AS revenue_rub
 FROM ${LEADS_TABLE} AS l
 LEFT JOIN ${LEAD_META_TABLE} AS m ON l.submission_id = m.submission_id
 WHERE ($site_host = "" OR l.site_host = $site_host)
@@ -431,6 +438,7 @@ DECLARE $submission_id AS Utf8;
 SELECT ${LEAD_JOIN_SELECT_COLUMNS}
   , COALESCE(m.notes, "") AS notes
   , COALESCE(m.manual_source, "") AS manual_source
+  , COALESCE(m.revenue_rub, CAST(0 AS Uint64)) AS revenue_rub
 FROM ${LEADS_TABLE} AS l
 LEFT JOIN ${LEAD_META_TABLE} AS m ON l.submission_id = m.submission_id
 WHERE l.submission_id = $submission_id
@@ -464,6 +472,7 @@ LIMIT 1;`);
           '$expires_at': ydb.TypedValues.timestamp(expiresAt),
           '$notes': ydb.TypedValues.utf8(lead.notes || ''),
           '$manual_source': ydb.TypedValues.utf8(lead.manualSource || ''),
+          '$revenue_rub': ydb.TypedValues.uint64(0),
         });
       }, 10000);
     } catch (error) {
@@ -471,7 +480,7 @@ LIMIT 1;`);
     }
   }
 
-  async function updateMeta(submissionId, notes, manualSource, accessToken) {
+  async function updateMeta(submissionId, notes, manualSource, revenueRub, accessToken) {
     const ydb = sdk || require('ydb-sdk');
     const activeDriver = await getDriver(accessToken);
     await ensureSchema(activeDriver);
@@ -484,6 +493,7 @@ LIMIT 1;`);
           '$submission_id': ydb.TypedValues.utf8(submissionId),
           '$notes': ydb.TypedValues.utf8(notes),
           '$manual_source': ydb.TypedValues.utf8(manualSource),
+          '$revenue_rub': ydb.TypedValues.uint64(revenueRub),
           '$updated_at': ydb.TypedValues.timestamp(new Date()),
           '$expires_at': ydb.TypedValues.timestamp(existing.expires_at instanceof Date ? existing.expires_at : new Date(existing.expires_at)),
         });

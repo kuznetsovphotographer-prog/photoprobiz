@@ -15,6 +15,12 @@ try {
     $entries = @($archive.Entries | ForEach-Object { $_.FullName })
     if (Compare-Object $files $entries) { throw 'Unexpected CRM archive contents' }
   } finally { $archive.Dispose() }
-  Get-FileHash -LiteralPath $zipPath -Algorithm SHA256
+  $stream = [IO.File]::OpenRead($zipPath)
+  try {
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { $hash = [BitConverter]::ToString($sha.ComputeHash($stream)).Replace('-', '').ToLowerInvariant() }
+    finally { $sha.Dispose() }
+  } finally { $stream.Dispose() }
+  Write-Output "SHA256 $hash"
   Write-Output $zipPath
 } finally { Pop-Location }

@@ -48,10 +48,11 @@ test('site filters and all writes stay in the database that owns the lead', asyn
   const { calls, store } = fixture();
   assert.deepEqual((await store.list('token', { siteHost: 'prointeriors.ru' })).rows.map(value => value.submission_id), ['interior-1']);
   await store.updateStatus('interior-1', 'contacted', 'token');
-  await store.updateMeta('interior-1', 'note', '', 'token');
+  await store.updateMeta('interior-1', 'note', '', 25000, 'token');
   await store.updateStatus('business-1', 'closed', 'token');
   await store.save({ name: 'business' }, 'time', 'token', 'photoprobiz.ru');
   assert.deepEqual(calls.map(value => value[0]), ['interior-status', 'interior-meta', 'primary-status', 'primary-save']);
+  assert.deepEqual(calls[1], ['interior-meta', 'interior-1', 'note', '', 25000, 'token']);
 });
 
 test('same UUID in two databases fails closed instead of updating the wrong client', async () => {
@@ -109,6 +110,12 @@ test('interior adapter reads the two coarse device columns and no raw client fin
   assert.match(INTERIORS_SELECT, /l\.device_type/);
   assert.match(INTERIORS_SELECT, /l\.os_family/);
   assert.doesNotMatch(INTERIORS_SELECT, /user_agent|ip_address|browser_version|device_model/i);
+});
+
+test('CRM routes the internal revenue amount without mixing it into notes', async () => {
+  const { calls, store } = fixture();
+  await store.updateMeta('business-1', 'Комментарий', 'Рекомендация', 48000, 'token');
+  assert.deepEqual(calls[0], ['primary-meta', 'business-1', 'Комментарий', 'Рекомендация', 48000, 'token']);
 });
 
 test('interior deletion removes all linked rows in one multi-statement query', () => {

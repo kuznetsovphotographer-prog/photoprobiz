@@ -26,19 +26,19 @@ test('consent rollout preserves the accepted document version and rejects unknow
     fetchImpl: success,
     leadStore: { databaseConfigured: () => true, save: async (value) => recordedVersions.push(value.consentVersion) },
   });
-  for (const consentVersion of ['2026-09-11', '2026-09-12', '2026-09-12-2']) {
+  for (const consentVersion of ['2026-09-11', '2026-09-12', '2026-09-12-2', '2026-09-12-3']) {
     const result = await handle(event({ ...lead, consentVersion }), context);
     assert.equal(result.statusCode, 200);
   }
   const rejected = await handle(event({ ...lead, consentVersion: 'unknown-version' }), context);
   assert.equal(rejected.statusCode, 400);
-  assert.deepEqual(recordedVersions, ['2026-09-11', '2026-09-12', '2026-09-12-2']);
+  assert.deepEqual(recordedVersions, ['2026-09-11', '2026-09-12', '2026-09-12-2', '2026-09-12-3']);
 });
 
 test('the current consent version requires supported coarse device information while old pages remain compatible', async () => {
   const stored = [];
   const handle = handler({ fetchImpl: success, leadStore: { databaseConfigured: () => true, save: async (value) => stored.push(value) } });
-  const current = { ...lead, consentVersion: '2026-09-12-2' };
+  const current = { ...lead, consentVersion: '2026-09-12-3' };
   assert.equal((await handle(event(current), context)).statusCode, 200);
   const { deviceType: _deviceType, osFamily: _osFamily, ...withoutProfile } = current;
   assert.equal((await handle(event(withoutProfile), context)).statusCode, 400);
@@ -104,7 +104,7 @@ test('admin page is public shell but lead data requires a signed session', async
     get: async (id) => id === lead.submissionId ? row : null,
     sites: async () => ['photoprobiz.ru'],
     saveManual: async (manual) => manualLeads.push(manual),
-    updateMeta: async (id, notes, manualSource) => { noteUpdates.push({ id, notes, manualSource }); return true; },
+    updateMeta: async (id, notes, manualSource, revenueRub) => { noteUpdates.push({ id, notes, manualSource, revenueRub }); return true; },
     updateStatus: async (id, status) => statusUpdates.push({ id, status }),
   };
   const instance = createHandler({ env: adminEnv, leadStore });
@@ -114,6 +114,12 @@ test('admin page is public shell but lead data requires a signed session', async
   assert.ok(page.body.includes('Александр · CRM'));
   assert.ok(page.body.includes('Добавить клиента'));
   assert.ok(page.body.includes('Моя заметка'));
+  assert.ok(page.body.includes('Стоимость моей работы'));
+  assert.ok(page.body.includes('<svg viewBox="0 0 24 24"'));
+  assert.ok(page.body.includes('class="add-icon"'));
+  assert.ok(page.body.includes('id="selection-marquee"'));
+  assert.ok(page.body.includes('function marqueeMove'));
+  assert.ok(page.body.includes('list.onpointerdown'));
   assert.ok(page.body.includes('Удалить заявку'));
   assert.ok(page.body.includes('Выбрать все'));
   assert.ok(page.body.includes('https://max.ru/'));
@@ -172,10 +178,17 @@ test('admin page is public shell but lead data requires a signed session', async
   const notes = await instance({
     httpMethod: 'POST', queryStringParameters: { admin_api: 'notes' },
     headers: { 'X-Admin-Session': session, Origin: 'https://functions.yandexcloud.net' },
-    body: JSON.stringify({ submissionId: lead.submissionId, notes: 'Позвонить в пятницу', manualSource: '' }),
+    body: JSON.stringify({ submissionId: lead.submissionId, notes: 'Позвонить в пятницу', manualSource: '', revenueRub: 35000 }),
   }, context);
   assert.equal(notes.statusCode, 200);
-  assert.deepEqual(noteUpdates, [{ id: lead.submissionId, notes: 'Позвонить в пятницу', manualSource: '' }]);
+  assert.deepEqual(noteUpdates, [{ id: lead.submissionId, notes: 'Позвонить в пятницу', manualSource: '', revenueRub: 35000 }]);
+
+  const invalidRevenue = await instance({
+    httpMethod: 'POST', queryStringParameters: { admin_api: 'notes' },
+    headers: { 'X-Admin-Session': session, Origin: 'https://functions.yandexcloud.net' },
+    body: JSON.stringify({ submissionId: lead.submissionId, notes: '', manualSource: '', revenueRub: -1 }),
+  }, context);
+  assert.equal(invalidRevenue.statusCode, 400);
 });
 
 test('CRM public model exposes only supported coarse device values', () => {
@@ -183,6 +196,8 @@ test('CRM public model exposes only supported coarse device values', () => {
   assert.equal(publicLead({ device_type: 'tablet', os_family: 'ipados' }).osFamily, 'ipados');
   assert.equal(publicLead({ device_type: 'watch', os_family: 'windows-11' }).deviceType, 'unknown');
   assert.equal(publicLead({ device_type: 'watch', os_family: 'windows-11' }).osFamily, 'unknown');
+  assert.equal(publicLead({ revenue_rub: 42000 }).revenueRub, 42000);
+  assert.equal(publicLead({ revenue_rub: -1 }).revenueRub, 0);
 });
 
 test('signed admin delete API enforces origin, auth, unique valid IDs and limit', async () => {
@@ -466,6 +481,29 @@ test('existing YDB lead tables receive nullable device columns without rebuildin
   ]);
 });
 
+test('existing CRM metadata tables receive a nullable revenue column without rebuilding stored notes', async () => {
+  const altered = [];
+  class Column { constructor(name, type) { this.name = name; this.type = type; } }
+  class AlterTableDescription {
+    constructor() { this.columns = []; }
+    withAddColumn(column) { this.columns.push(column); return this; }
+  }
+  const sdk = {
+    AlterTableDescription,
+    Column,
+    Types: { UINT64: { typeId: 'UINT64' }, optional: (type) => ({ optional: true, type }) },
+  };
+  const session = { alterTable: async (tableName, description) => altered.push({ tableName, description }) };
+  await ensureColumns(session, sdk, LEAD_META_TABLE, [['revenue_rub', 'UINT64']], {
+    columns: LEAD_META_COLUMNS.filter(([name]) => name !== 'revenue_rub').map(([name]) => ({ name })),
+  });
+  assert.equal(altered.length, 1);
+  assert.equal(altered[0].tableName, LEAD_META_TABLE);
+  assert.deepEqual(altered[0].description.columns.map(({ name, type }) => ({ name, optional: type.optional })), [
+    { name: 'revenue_rub', optional: true },
+  ]);
+});
+
 test('YDB store creates lead, consent and CRM metadata tables once and upserts both consent records', async () => {
   const createdTables = [];
   const existingTables = new Set();
@@ -503,8 +541,8 @@ test('YDB store creates lead, consent and CRM metadata tables once and upserts b
     StatusCode: { SCHEME_ERROR: 400070, ALREADY_EXISTS: 400130, NOT_FOUND: 400140 },
     TableDescription,
     TokenAuthService,
-    TypedValues: { utf8: typed('utf8'), timestamp: typed('timestamp'), list: (type, value) => ({ type: 'list', itemType: type, value }) },
-    Types: { UTF8: { typeId: 'UTF8' }, TIMESTAMP: { typeId: 'TIMESTAMP' } },
+    TypedValues: { utf8: typed('utf8'), uint64: typed('uint64'), timestamp: typed('timestamp'), list: (type, value) => ({ type: 'list', itemType: type, value }) },
+    Types: { UTF8: { typeId: 'UTF8' }, UINT64: { typeId: 'UINT64' }, TIMESTAMP: { typeId: 'TIMESTAMP' } },
   };
   const store = createYdbStore({ env, sdk });
   await store.save(lead, '2026-09-11T12:00:00.000Z', context.token.access_token);
@@ -531,6 +569,7 @@ test('YDB store creates lead, consent and CRM metadata tables once and upserts b
   assert.equal(queries[2].query, UPSERT_MANUAL_LEAD);
   assert.equal(queries[2].params.$site_host.value, 'manual.crm');
   assert.equal(queries[2].params.$notes.value, 'Позвонить');
+  assert.equal(queries[2].params.$revenue_rub.value, 0);
 
   await store.deleteMany([lead.submissionId], context.token.access_token);
   assert.equal(queries[3].query, DELETE_LEADS);

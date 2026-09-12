@@ -14,7 +14,7 @@ const methods = { phone: 'Телефон', telegram: 'Telegram', whatsapp: 'What
 const sources = { modal: 'Всплывающая форма', inline: 'Форма на странице' };
 const DEVICE_TYPES = new Set(['computer', 'phone', 'tablet', 'unknown']);
 const OS_FAMILIES = new Set(['windows', 'macos', 'android', 'ios', 'ipados', 'harmonyos', 'linux', 'chromeos', 'unknown']);
-const DEVICE_PROFILE_REQUIRED_CONSENT_VERSIONS = new Set(['2026-09-12-2']);
+const DEVICE_PROFILE_REQUIRED_CONSENT_VERSIONS = new Set(['2026-09-12-2', '2026-09-12-3']);
 const DEFAULT_SITE = {
   siteHost: 'photoprobiz.ru',
   label: 'Деловой фотограф',
@@ -24,7 +24,7 @@ const DEFAULT_SITE = {
     'http://127.0.0.1:4173', 'http://127.0.0.1:5173',
     'http://localhost:4173', 'http://localhost:5173',
   ],
-  consentVersions: ['2026-09-11', '2026-09-12', '2026-09-12-2'],
+  consentVersions: ['2026-09-11', '2026-09-12', '2026-09-12-2', '2026-09-12-3'],
   packages: ['Минимальный', 'Базовый', 'Полный'],
   formIds: ['homepage-inline', 'modal-general', 'modal-package-minimal', 'modal-package-base', 'modal-package-full'],
 };
@@ -158,6 +158,7 @@ function iso(value) {
 }
 
 function publicLead(row) {
+  const revenueRub = Number(row?.revenue_rub || 0);
   return {
     submissionId: String(row?.submission_id || ''),
     serverReceivedAt: iso(row?.server_received_at),
@@ -177,6 +178,7 @@ function publicLead(row) {
     expiresAt: iso(row?.expires_at),
     notes: String(row?.notes || ''),
     manualSource: String(row?.manual_source || ''),
+    revenueRub: Number.isSafeInteger(revenueRub) && revenueRub >= 0 ? revenueRub : 0,
   };
 }
 
@@ -350,11 +352,14 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
         const payload = parseJsonBody(event, 8192);
         const notes = typeof payload?.notes === 'string' ? payload.notes.trim() : '';
         const manualSource = typeof payload?.manualSource === 'string' ? payload.manualSource.trim() : '';
-        if (!/^[A-Za-z0-9-]{16,80}$/.test(payload?.submissionId || '') || notes.length > 3000 || manualSource.length > 120 || /[<>]/u.test(notes) || /[<>\r\n]/u.test(manualSource)) {
+        const revenueRub = payload?.revenueRub == null ? 0 : Number(payload.revenueRub);
+        if (!/^[A-Za-z0-9-]{16,80}$/.test(payload?.submissionId || '') || notes.length > 3000 || manualSource.length > 120
+          || !Number.isSafeInteger(revenueRub) || revenueRub < 0 || revenueRub > 1_000_000_000
+          || /[<>]/u.test(notes) || /[<>\r\n]/u.test(manualSource)) {
           return adminReply(400, { error: 'Invalid lead notes.' });
         }
         try {
-          const updated = await store.updateMeta(payload.submissionId, notes, manualSource, context?.token?.access_token);
+          const updated = await store.updateMeta(payload.submissionId, notes, manualSource, revenueRub, context?.token?.access_token);
           return updated ? adminReply(200, { ok: true, session: renewedSession }) : adminReply(404, { error: 'Lead not found.' });
         } catch (error) {
           console.error('YDB_ADMIN_OPERATION_FAILED', safeYdbDiagnostic(error));

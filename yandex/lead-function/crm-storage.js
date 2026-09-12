@@ -1,6 +1,6 @@
 'use strict';
 
-const { createYdbStore, ensureTable, LEAD_META_COLUMNS, LEAD_META_TABLE, stageError } = require('./storage.js');
+const { createYdbStore, ensureColumns, ensureTable, LEAD_META_COLUMNS, LEAD_META_TABLE, stageError } = require('./storage.js');
 
 const INTERIORS_HOST = 'prointeriors.ru';
 const INTERIORS_LABEL = 'Интерьерная съёмка';
@@ -63,9 +63,10 @@ function createInteriorsStore({ endpoint, database, sdk } = {}) {
   async function ensureMeta(active) {
     if (!schemaPromise) {
       const ydb = sdk || require('ydb-sdk');
-      schemaPromise = active.tableClient.withSessionRetry((session) =>
-        ensureTable(session, ydb, LEAD_META_TABLE, LEAD_META_COLUMNS), 10000
-      ).catch((error) => { schemaPromise = undefined; throw stageError(error, 'schema'); });
+      schemaPromise = active.tableClient.withSessionRetry(async (session) => {
+        const metaDescription = await ensureTable(session, ydb, LEAD_META_TABLE, LEAD_META_COLUMNS);
+        await ensureColumns(session, ydb, LEAD_META_TABLE, [['revenue_rub', 'UINT64']], metaDescription);
+      }, 10000).catch((error) => { schemaPromise = undefined; throw stageError(error, 'schema'); });
     }
     return schemaPromise;
   }
@@ -75,7 +76,7 @@ function createInteriorsStore({ endpoint, database, sdk } = {}) {
     if (!set) return [];
     return ydb.TypedData.createNativeObjects(set).map((row) => ({ ...row,
       package_name: estimateLabel(row.estimate_json), notes: String(row.notes || ''),
-      manual_source: String(row.manual_source || '') }));
+      manual_source: String(row.manual_source || ''), revenue_rub: Number(row.revenue_rub || 0) }));
   }
 
   async function run(accessToken, callback, stage = 'read') {
@@ -95,7 +96,8 @@ function createInteriorsStore({ endpoint, database, sdk } = {}) {
       const query = await session.prepareQuery(`
 DECLARE $has_cursor AS Bool; DECLARE $before_at AS Timestamp; DECLARE $before_id AS Utf8;
 DECLARE $has_period AS Bool; DECLARE $period_from AS Timestamp; DECLARE $period_to AS Timestamp;
-SELECT ${INTERIORS_SELECT}, COALESCE(m.notes, "") AS notes, COALESCE(m.manual_source, "") AS manual_source
+SELECT ${INTERIORS_SELECT}, COALESCE(m.notes, "") AS notes, COALESCE(m.manual_source, "") AS manual_source,
+COALESCE(m.revenue_rub, CAST(0 AS Uint64)) AS revenue_rub
 FROM leads AS l INNER JOIN consent_events AS c ON l.submission_id = c.submission_id
 LEFT JOIN lead_meta AS m ON l.submission_id = m.submission_id
 WHERE l.site_host = "${INTERIORS_HOST}"
@@ -120,7 +122,8 @@ ORDER BY l.server_received_at DESC, l.submission_id DESC LIMIT ${safeLimit + 1};
     const ydb = sdk || require('ydb-sdk');
     const result = await run(accessToken, async (session) => {
       const query = await session.prepareQuery(`DECLARE $submission_id AS Utf8;
-SELECT ${INTERIORS_SELECT}, COALESCE(m.notes, "") AS notes, COALESCE(m.manual_source, "") AS manual_source
+SELECT ${INTERIORS_SELECT}, COALESCE(m.notes, "") AS notes, COALESCE(m.manual_source, "") AS manual_source,
+COALESCE(m.revenue_rub, CAST(0 AS Uint64)) AS revenue_rub
 FROM leads AS l INNER JOIN consent_events AS c ON l.submission_id = c.submission_id
 LEFT JOIN lead_meta AS m ON l.submission_id = m.submission_id
 WHERE l.submission_id = $submission_id AND l.site_host = "${INTERIORS_HOST}" LIMIT 1;`);
@@ -137,18 +140,19 @@ WHERE l.submission_id = $submission_id AND l.site_host = "${INTERIORS_HOST}" LIM
     }, 'write');
   }
 
-  async function updateMeta(submissionId, notes, manualSource, accessToken) {
+  async function updateMeta(submissionId, notes, manualSource, revenueRub, accessToken) {
     const ydb = sdk || require('ydb-sdk');
     const existing = await get(submissionId, accessToken);
     if (!existing) return false;
     await run(accessToken, async (session) => {
-      const query = await session.prepareQuery(`DECLARE $id AS Utf8; DECLARE $notes AS Utf8; DECLARE $source AS Utf8;
+      const query = await session.prepareQuery(`DECLARE $id AS Utf8; DECLARE $notes AS Utf8; DECLARE $source AS Utf8; DECLARE $revenue AS Uint64;
 DECLARE $updated AS Timestamp; DECLARE $expires AS Timestamp;
-UPSERT INTO lead_meta (submission_id, notes, manual_source, updated_at, expires_at)
-VALUES ($id, $notes, $source, $updated, $expires);`);
+UPSERT INTO lead_meta (submission_id, notes, manual_source, revenue_rub, updated_at, expires_at)
+VALUES ($id, $notes, $source, $revenue, $updated, $expires);`);
       return session.executeQuery(query, {
         '$id': ydb.TypedValues.utf8(submissionId), '$notes': ydb.TypedValues.utf8(notes),
-        '$source': ydb.TypedValues.utf8(manualSource), '$updated': ydb.TypedValues.timestamp(new Date()),
+        '$source': ydb.TypedValues.utf8(manualSource), '$revenue': ydb.TypedValues.uint64(revenueRub),
+        '$updated': ydb.TypedValues.timestamp(new Date()),
         '$expires': ydb.TypedValues.timestamp(existing.expires_at instanceof Date ? existing.expires_at : new Date(existing.expires_at)),
       });
     }, 'write');
@@ -219,7 +223,7 @@ function createCrmStore({ env = process.env, sdk, primaryStore, interiorsStore }
     },
     async get(id, token) { return (await owner(id, token))?.row || null; },
     async updateStatus(id, status, token) { const target = await owner(id, token); if (!target) return false; await target.store.updateStatus(id, status, token); return true; },
-    async updateMeta(id, notes, source, token) { const target = await owner(id, token); return target ? target.store.updateMeta(id, notes, source, token) : false; },
+    async updateMeta(id, notes, source, revenueRub, token) { const target = await owner(id, token); return target ? target.store.updateMeta(id, notes, source, revenueRub, token) : false; },
     async deleteMany(ids, token) {
       const [primaryIds, interiorIds] = await Promise.all([
         primary.existingIds(ids, token),
