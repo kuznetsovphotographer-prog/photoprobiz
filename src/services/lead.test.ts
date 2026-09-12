@@ -4,7 +4,7 @@ import { createHttpLeadAdapter, mockLeadAdapter, submitLead, validateLead, type 
 
 const validLead: LeadInput = {
   name: 'Тест', contact: '+79991234567', contactMethod: 'phone', consent: true, source: 'modal',
-  consentAcceptedAt: '2026-09-11T10:00:00.000Z', consentVersion: '2026-09-11',
+  consentAcceptedAt: '2026-09-12T10:00:00.000Z', consentVersion: '2026-09-12',
   submissionId: '019a1234-5678-7000-8000-123456789abc', formId: 'modal-general',
 };
 

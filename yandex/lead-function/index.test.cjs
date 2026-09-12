@@ -19,6 +19,21 @@ const saved = () => ({ databaseConfigured: () => true, save: async () => {} });
 const handler = (options = {}) => createHandler({ env, leadStore: saved(), ...options });
 const context = { token: { access_token: 'test-function-iam-token' } };
 
+test('consent rollout preserves the accepted document version and rejects unknown versions before storage', async () => {
+  const recordedVersions = [];
+  const handle = handler({
+    fetchImpl: success,
+    leadStore: { databaseConfigured: () => true, save: async (value) => recordedVersions.push(value.consentVersion) },
+  });
+  for (const consentVersion of ['2026-09-11', '2026-09-12']) {
+    const result = await handle(event({ ...lead, consentVersion }), context);
+    assert.equal(result.statusCode, 200);
+  }
+  const rejected = await handle(event({ ...lead, consentVersion: 'unknown-version' }), context);
+  assert.equal(rejected.statusCode, 400);
+  assert.deepEqual(recordedVersions, ['2026-09-11', '2026-09-12']);
+});
+
 function passwordHash(password) {
   const salt = randomBytes(16);
   const hash = scryptSync(password, salt, 32, { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 });

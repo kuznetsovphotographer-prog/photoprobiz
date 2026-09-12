@@ -21,7 +21,7 @@ const DEFAULT_SITE = {
     'http://127.0.0.1:4173', 'http://127.0.0.1:5173',
     'http://localhost:4173', 'http://localhost:5173',
   ],
-  consentVersions: ['2026-09-11'],
+  consentVersions: ['2026-09-11', '2026-09-12'],
   packages: ['Минимальный', 'Базовый', 'Полный'],
   formIds: ['homepage-inline', 'modal-general', 'modal-package-minimal', 'modal-package-base', 'modal-package-full'],
 };
