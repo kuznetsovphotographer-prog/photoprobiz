@@ -74,7 +74,7 @@ export const servicePages: Record<string, ServicePageData> = {
     ],
     benefits: ['Портреты врачей в едином стиле', 'Рабочие сцены без случайных деталей в кадре', 'Фотографии интерьера и оборудования', 'Материал для сайта, рекламы и социальных сетей'],
     galleryKey: '#popup:doctors',
-    galleryImageIndices: [0, 1, 2, 3, 4],
+    galleryImageIndices: [0, 1, 2, 3, 4, 8, 7],
     galleryTitle: 'Фотографии врачей и клиник',
   },
 };

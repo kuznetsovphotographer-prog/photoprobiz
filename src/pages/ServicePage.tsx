@@ -56,7 +56,7 @@ export function ServicePage({ serviceKey, basePath = '../' }: { serviceKey: stri
       <section className="service-gallery" aria-labelledby={`${serviceKey}-gallery`}>
         <p className="service-section-label">Портфолио</p>
         <h2 id={`${serviceKey}-gallery`}>{page.galleryTitle}</h2>
-        <div className={images.length === 5 ? 'service-gallery-grid--four' : undefined}>{images.slice(1).map(image => <picture key={image.src}>
+        <div>{images.slice(1).map(image => <picture key={image.src}>
           <img src={basePath + image.src} srcSet={localSrcSet(image.srcSet, basePath)} sizes="(max-width: 760px) calc(100vw - 24px), (max-width: 1050px) 50vw, 33vw" width={image.width} height={image.height} alt={image.alt} loading="lazy" decoding="async" />
         </picture>)}</div>
       </section>

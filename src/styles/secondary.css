@@ -124,7 +124,6 @@
 .service-benefits li::before { display: block; content: '✓'; margin-bottom: 24px; color: #8b6f5c; font-size: 22px; }
 .service-gallery { max-width: 1600px; margin: 0 auto; padding: clamp(90px, 10vw, 170px) clamp(20px, 4vw, 64px); }
 .service-gallery > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(12px, 1.3vw, 20px); margin-top: 54px; }
-.service-gallery > .service-gallery-grid--four { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 960px; }
 .service-gallery picture { display: block; aspect-ratio: 3 / 4; overflow: hidden; background: #eee; }
 .service-gallery img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center top; transition: transform .5s ease; }
 .service-gallery picture:hover img { transform: scale(1.025); }
@@ -167,7 +166,6 @@
   .service-benefits li { min-height: 130px; }
   .service-gallery { padding: 88px 12px; }
   .service-gallery > div { grid-template-columns: 1fr; gap: 10px; margin-top: 36px; }
-  .service-gallery > .service-gallery-grid--four { grid-template-columns: 1fr; max-width: none; }
   .service-contact { align-items: flex-start; flex-direction: column; padding: 80px 24px; }
   .service-footer { flex-direction: column; padding: 26px 24px; }
   .service-footer nav { justify-content: flex-start; }
