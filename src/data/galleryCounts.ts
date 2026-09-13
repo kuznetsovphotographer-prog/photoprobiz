@@ -21,5 +21,5 @@ export const galleryImageCounts: Readonly<Record<string, number>> = {
   '#popup:digital-specialists': 10,
   '#popup:resume-interiors': 10,
   '#popup:dark-business': 10,
-  '#popup:wardrobe-interiors': 10,
+  '#popup:anna-business-portrait': 11,
 };

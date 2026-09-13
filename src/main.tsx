@@ -43,6 +43,9 @@ async function showPopup(hash:string){
   }else if(contentHash==='lighting-setup'){
     const {LightingSetupFeature}=await import('./components/LightingSetupFeature');
     variant='feature';label='Техническое совершенство';child=<LightingSetupFeature basePath={basePath}/>;
+  }else if(contentHash==='wardrobe-guide'){
+    const {WardrobeGuideFeature}=await import('./components/WardrobeGuideFeature');
+    variant='feature';label='Детальный разбор образов';child=<WardrobeGuideFeature basePath={basePath}/>;
   }else if(hash==='#mobilemenu'){
     variant='menu';label='Меню';
     const {MobileNavigation}=await import('./components/MobileNavigation');

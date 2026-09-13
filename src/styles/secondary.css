@@ -335,6 +335,26 @@
 }
 @media (min-width: 960px) and (max-width: 1199px) {
   .section-hero .canvas { height: max(800px, calc(100svh - 80px)) !important; }
+  /* Balance the complete desktop navigation group against the logo on tablets. */
+  .section-header .n3 { right: clamp(40px, 5.3vw, 64px); left: auto; }
+
+  /* Keep the paired studio cards visually equal on iPad Pro layouts. */
+  .section-studio-content .n342,
+  .section-studio-content .n343,
+  .section-studio-content .n344 {
+    width: 348px !important;
+    height: 347px !important;
+  }
+  .section-studio-content .n342 {
+    top: 734px !important;
+    left: calc(50% + 19.5px) !important;
+  }
+  .section-studio-content .n354 {
+    top: 1092px !important;
+    left: calc(50% + 19.5px) !important;
+    width: 348px !important;
+  }
+  .section-studio-content .n355 { width: 348px !important; }
 }
 
 /* Vertically balance the office-studio copy with its portrait image. */

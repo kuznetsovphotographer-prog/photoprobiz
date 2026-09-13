@@ -2262,5 +2262,87 @@
         "alt": "Стильный женский бизнес-портрет блондинки в сером костюме. Интерьерная фотосессия в дизайнерском пространстве с зеркалами, Москва."
       }
     ]
+  },
+  "#popup:anna-business-portrait": {
+    "title": "Женский бизнес-портрет в интерьере",
+    "images": [
+      {
+        "src": "images/neformalnyy-biznes-portret-zhenshchiny-moskva-bcd5fd6f5-1002.webp",
+        "width": 1002,
+        "height": 1335,
+        "srcSet": "images/neformalnyy-biznes-portret-zhenshchiny-moskva-bcd5fd6f5-320.webp 320w, images/neformalnyy-biznes-portret-zhenshchiny-moskva-bcd5fd6f5-640.webp 640w, images/neformalnyy-biznes-portret-zhenshchiny-moskva-bcd5fd6f5-960.webp 960w, images/neformalnyy-biznes-portret-zhenshchiny-moskva-bcd5fd6f5-1002.webp 1002w",
+        "alt": "Неформальный женский бизнес-портрет девушки с креативной прической в сером костюме. Интерьерная фотосессия в современной студии, Москва."
+      },
+      {
+        "src": "images/zhenskiy-delovoy-portret-v-chernom-kozhanom-pidzhake-897676c95-1726.webp",
+        "width": 1726,
+        "height": 2500,
+        "srcSet": "images/zhenskiy-delovoy-portret-v-chernom-kozhanom-pidzhake-897676c95-320.webp 320w, images/zhenskiy-delovoy-portret-v-chernom-kozhanom-pidzhake-897676c95-640.webp 640w, images/zhenskiy-delovoy-portret-v-chernom-kozhanom-pidzhake-897676c95-960.webp 960w, images/zhenskiy-delovoy-portret-v-chernom-kozhanom-pidzhake-897676c95-1440.webp 1440w, images/zhenskiy-delovoy-portret-v-chernom-kozhanom-pidzhake-897676c95-1726.webp 1726w",
+        "alt": "Женский деловой портрет блондинки в чёрном кожаном пиджаке на тёмном фоне. Имиджевая фотосессия в Москве."
+      },
+      {
+        "src": "images/zhenskiy-biznes-portret-v-serom-kostyume-b19babf39-1877.webp",
+        "width": 1877,
+        "height": 2500,
+        "srcSet": "images/zhenskiy-biznes-portret-v-serom-kostyume-b19babf39-320.webp 320w, images/zhenskiy-biznes-portret-v-serom-kostyume-b19babf39-640.webp 640w, images/zhenskiy-biznes-portret-v-serom-kostyume-b19babf39-960.webp 960w, images/zhenskiy-biznes-portret-v-serom-kostyume-b19babf39-1440.webp 1440w, images/zhenskiy-biznes-portret-v-serom-kostyume-b19babf39-1877.webp 1877w",
+        "alt": "Женский бизнес-портрет блондинки в сером костюме. Современная имиджевая фотосессия в интерьере, Москва."
+      },
+      {
+        "src": "images/zhenskiy-portret-v-chernom-polosatom-kostyume-d6614f722-1670.webp",
+        "width": 1670,
+        "height": 2500,
+        "srcSet": "images/zhenskiy-portret-v-chernom-polosatom-kostyume-d6614f722-320.webp 320w, images/zhenskiy-portret-v-chernom-polosatom-kostyume-d6614f722-640.webp 640w, images/zhenskiy-portret-v-chernom-polosatom-kostyume-d6614f722-960.webp 960w, images/zhenskiy-portret-v-chernom-polosatom-kostyume-d6614f722-1440.webp 1440w, images/zhenskiy-portret-v-chernom-polosatom-kostyume-d6614f722-1670.webp 1670w",
+        "alt": "Стильный женский портрет в чёрном полосатом костюме. Деловая фотосессия для личного бренда в Москве."
+      },
+      {
+        "src": "images/delovoy-portret-v-serom-bryuchnom-kostyume-ddb122561-1652.webp",
+        "width": 1652,
+        "height": 2500,
+        "srcSet": "images/delovoy-portret-v-serom-bryuchnom-kostyume-ddb122561-320.webp 320w, images/delovoy-portret-v-serom-bryuchnom-kostyume-ddb122561-640.webp 640w, images/delovoy-portret-v-serom-bryuchnom-kostyume-ddb122561-960.webp 960w, images/delovoy-portret-v-serom-bryuchnom-kostyume-ddb122561-1440.webp 1440w, images/delovoy-portret-v-serom-bryuchnom-kostyume-ddb122561-1652.webp 1652w",
+        "alt": "Ростовой женский деловой портрет в сером брючном костюме. Имиджевая съёмка в дизайнерском интерьере, Москва."
+      },
+      {
+        "src": "images/zhenskiy-imidzhevyy-portret-v-chernom-obraze-34ac260b9-1790.webp",
+        "width": 1790,
+        "height": 2500,
+        "srcSet": "images/zhenskiy-imidzhevyy-portret-v-chernom-obraze-34ac260b9-320.webp 320w, images/zhenskiy-imidzhevyy-portret-v-chernom-obraze-34ac260b9-640.webp 640w, images/zhenskiy-imidzhevyy-portret-v-chernom-obraze-34ac260b9-960.webp 960w, images/zhenskiy-imidzhevyy-portret-v-chernom-obraze-34ac260b9-1440.webp 1440w, images/zhenskiy-imidzhevyy-portret-v-chernom-obraze-34ac260b9-1790.webp 1790w",
+        "alt": "Ростовой женский имиджевый портрет в чёрном образе. Креативная бизнес-фотосессия в интерьерной студии, Москва."
+      },
+      {
+        "src": "images/zhenskiy-biznes-portret-v-ochkah-i-serom-kostyume-7f9844581-1877.webp",
+        "width": 1877,
+        "height": 2500,
+        "srcSet": "images/zhenskiy-biznes-portret-v-ochkah-i-serom-kostyume-7f9844581-320.webp 320w, images/zhenskiy-biznes-portret-v-ochkah-i-serom-kostyume-7f9844581-640.webp 640w, images/zhenskiy-biznes-portret-v-ochkah-i-serom-kostyume-7f9844581-960.webp 960w, images/zhenskiy-biznes-portret-v-ochkah-i-serom-kostyume-7f9844581-1440.webp 1440w, images/zhenskiy-biznes-portret-v-ochkah-i-serom-kostyume-7f9844581-1877.webp 1877w",
+        "alt": "Женский бизнес-портрет в очках и сером костюме рядом с дизайнерским светильником. Деловая фотосессия, Москва."
+      },
+      {
+        "src": "images/zhenskiy-portret-v-belom-delovom-obraze-787621d39-1667.webp",
+        "width": 1667,
+        "height": 2500,
+        "srcSet": "images/zhenskiy-portret-v-belom-delovom-obraze-787621d39-320.webp 320w, images/zhenskiy-portret-v-belom-delovom-obraze-787621d39-640.webp 640w, images/zhenskiy-portret-v-belom-delovom-obraze-787621d39-960.webp 960w, images/zhenskiy-portret-v-belom-delovom-obraze-787621d39-1440.webp 1440w, images/zhenskiy-portret-v-belom-delovom-obraze-787621d39-1667.webp 1667w",
+        "alt": "Женский портрет в белом деловом образе на фоне современного интерьера. Фотосессия для личного бренда в Москве."
+      },
+      {
+        "src": "images/krupnyy-zhenskiy-portret-v-serom-pidzhake-8edf80fb3-1877.webp",
+        "width": 1877,
+        "height": 2500,
+        "srcSet": "images/krupnyy-zhenskiy-portret-v-serom-pidzhake-8edf80fb3-320.webp 320w, images/krupnyy-zhenskiy-portret-v-serom-pidzhake-8edf80fb3-640.webp 640w, images/krupnyy-zhenskiy-portret-v-serom-pidzhake-8edf80fb3-960.webp 960w, images/krupnyy-zhenskiy-portret-v-serom-pidzhake-8edf80fb3-1440.webp 1440w, images/krupnyy-zhenskiy-portret-v-serom-pidzhake-8edf80fb3-1877.webp 1877w",
+        "alt": "Крупный женский деловой портрет в сером пиджаке на фоне тёплой интерьерной подсветки. Бизнес-фотосессия, Москва."
+      },
+      {
+        "src": "images/zhenskiy-portret-v-kozhanom-pidzhake-v-interiere-1725081b9-1827.webp",
+        "width": 1827,
+        "height": 2500,
+        "srcSet": "images/zhenskiy-portret-v-kozhanom-pidzhake-v-interiere-1725081b9-320.webp 320w, images/zhenskiy-portret-v-kozhanom-pidzhake-v-interiere-1725081b9-640.webp 640w, images/zhenskiy-portret-v-kozhanom-pidzhake-v-interiere-1725081b9-960.webp 960w, images/zhenskiy-portret-v-kozhanom-pidzhake-v-interiere-1725081b9-1440.webp 1440w, images/zhenskiy-portret-v-kozhanom-pidzhake-v-interiere-1725081b9-1827.webp 1827w",
+        "alt": "Женский имиджевый портрет в чёрном кожаном пиджаке за столом. Интерьерная фотосессия для эксперта, Москва."
+      },
+      {
+        "src": "images/zhenskiy-delovoy-portret-v-serom-pidzhake-v-interiere-79cf3261f-1736.webp",
+        "width": 1736,
+        "height": 2500,
+        "srcSet": "images/zhenskiy-delovoy-portret-v-serom-pidzhake-v-interiere-79cf3261f-320.webp 320w, images/zhenskiy-delovoy-portret-v-serom-pidzhake-v-interiere-79cf3261f-640.webp 640w, images/zhenskiy-delovoy-portret-v-serom-pidzhake-v-interiere-79cf3261f-960.webp 960w, images/zhenskiy-delovoy-portret-v-serom-pidzhake-v-interiere-79cf3261f-1440.webp 1440w, images/zhenskiy-delovoy-portret-v-serom-pidzhake-v-interiere-79cf3261f-1736.webp 1736w",
+        "alt": "Женский деловой портрет в сером пиджаке на фоне деревянных панелей. Имиджевая фотосессия в студии, Москва."
+      }
+    ]
   }
 }

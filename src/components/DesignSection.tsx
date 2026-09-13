@@ -25,7 +25,8 @@ const imageGalleryLinks: Record<string, { href: string; label: string }> = {
   n128: { href: '#popup:resume-interiors', label: 'Открыть галерею деловых портретов в интерьере' },
   n182: { href: '#popup:doctors', label: 'Открыть галерею врачей и клиник' },
   n215: { href: '#popup:dark-business', label: 'Открыть галерею деловых портретов на тёмном фоне' },
-  n635: { href: '#popup:wardrobe-interiors', label: 'Открыть галерею интерьерных деловых портретов' },
+  n378: { href: '#popup:anna-business-portrait', label: 'Открыть серию женских бизнес-портретов в интерьере' },
+  n635: { href: '#popup:wardrobe-guide', label: 'Подробнее о подготовке образов к фотосъёмке' },
   n698: { href: '#popup:lighting-setup', label: 'Подробнее о профессиональном студийном освещении' },
 };
 
@@ -78,8 +79,8 @@ function isLegacyGalleryCount(node: DesignNode): boolean {
   return texts.length === 1 && /^\d{1,3}$/.test(texts[0]) && descendantContainsSvg(node);
 }
 
-function GalleryCountBadge({ count }: { count: number }) {
-  return <span className="gallery-count-badge" aria-hidden="true">
+function GalleryCountBadge({ count, alwaysVisible = false }: { count: number; alwaysVisible?: boolean }) {
+  return <span className={`gallery-count-badge${alwaysVisible ? ' gallery-count-badge--always' : ''}`} aria-hidden="true">
     <span>{count}</span>
     <svg viewBox="0 0 18 15" aria-hidden="true">
       <rect x="3.5" y="1.5" width="13" height="10" rx="1.2" />
@@ -146,7 +147,7 @@ function Node({node, basePath, galleryHref}:{node:DesignNode;basePath:string;gal
   if (attributes.target === '_blank') attributes.rel='noopener noreferrer';
   if (node.widget === 'inline-form') return createElement('div',attributes,<div data-form-root="inline"><LeadForm variant="inline" basePath={basePath}/></div>);
   if (node.widget === 'retouch') return createElement('div',attributes,<RetouchComparison basePath={basePath}/>);
-  if (node.image) return createElement(tag,attributes,<Photo image={node.image} basePath={basePath}/>,galleryCount && <GalleryCountBadge count={galleryCount}/>,node.children.map(child=><Node key={child.className} node={child} basePath={basePath} galleryHref={activeGalleryHref}/>));
+  if (node.image) return createElement(tag,attributes,<Photo image={node.image} basePath={basePath}/>,galleryCount && <GalleryCountBadge count={galleryCount} alwaysVisible={activeGalleryHref === '#popup:anna-business-portrait'}/>,node.children.map(child=><Node key={child.className} node={child} basePath={basePath} galleryHref={activeGalleryHref}/>));
   if (node.html !== undefined) {
     attributes.dangerouslySetInnerHTML={__html:node.html};
     return createElement(tag,attributes);
