@@ -8,6 +8,7 @@ export type ServicePageData = {
   paragraphs: string[];
   benefits: string[];
   galleryKey: string;
+  galleryImageIndices: number[];
   galleryTitle: string;
 };
 
@@ -25,6 +26,7 @@ export const servicePages: Record<string, ServicePageData> = {
     ],
     benefits: ['Съёмка в студии, офисе или деловом интерьере', 'Помощь с гардеробом и позированием', 'Несколько образов для разных задач', 'Готовые фотографии в течение 7 дней'],
     galleryKey: '#popup:studio1',
+    galleryImageIndices: [12, 9, 10, 18, 19, 2, 15],
     galleryTitle: 'Примеры бизнес-портретов',
   },
   'korporativnaya-fotosessiya': {
@@ -40,6 +42,7 @@ export const servicePages: Record<string, ServicePageData> = {
     ],
     benefits: ['Единый стиль для всей команды', 'План съёмки и тайминг для сотрудников', 'Мобильный комплект профессионального света', 'Отбор и ретушь согласованных фотографий'],
     galleryKey: '#popup:savina',
+    galleryImageIndices: [0, 1, 2, 5, 6, 7, 8],
     galleryTitle: 'Примеры корпоративной съёмки',
   },
   'fotosessiya-sotrudnikov-v-ofise': {
@@ -55,6 +58,7 @@ export const servicePages: Record<string, ServicePageData> = {
     ],
     benefits: ['Портреты для сайта, CRM и корпоративной почты', 'Свет и фон привожу с собой', 'Быстрая работа по согласованному таймингу', 'Одинаковая композиция для новых сотрудников'],
     galleryKey: '#popup:employees',
+    galleryImageIndices: [2, 3, 4, 5, 6, 8, 9],
     galleryTitle: 'Портреты сотрудников',
   },
   'delovaya-fotosessiya-dlya-vrachey': {
@@ -70,7 +74,7 @@ export const servicePages: Record<string, ServicePageData> = {
     ],
     benefits: ['Портреты врачей в едином стиле', 'Рабочие сцены без случайных деталей в кадре', 'Фотографии интерьера и оборудования', 'Материал для сайта, рекламы и социальных сетей'],
     galleryKey: '#popup:doctors',
+    galleryImageIndices: [0, 1, 2, 3, 4],
     galleryTitle: 'Фотографии врачей и клиник',
   },
 };
-

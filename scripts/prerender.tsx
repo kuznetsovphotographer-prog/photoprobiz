@@ -38,7 +38,7 @@ type SeoEntry = { title: string; meta: Record<string,string>[]; canonical?: stri
 const serviceGallery = galleries as Record<string,{images:{src:string;alt:string}[]}>;
 function makeServiceSeo(serviceKey:string):SeoEntry {
  const service=servicePages[serviceKey];
- const image=serviceGallery[service.galleryKey].images[0];
+ const image=serviceGallery[service.galleryKey].images[service.galleryImageIndices[0]];
  const canonical=`https://photoprobiz.ru/${service.slug}/`;
  const imageUrl=`https://photoprobiz.ru/${image.src}`;
  return {
@@ -144,7 +144,7 @@ const robots=[robotGroup('OAI-SearchBot'),robotGroup('Claude-SearchBot'),robotGr
 await writeFile('public/robots.txt',robots,'utf8');
 const sitemapPages=[
  {url:'https://photoprobiz.ru/',image:'https://photoprobiz.ru/'+desktopHero.formats.webp.variants[0].src,title:desktopHero.alt},
- ...Object.values(servicePages).map(service=>{const image=serviceGallery[service.galleryKey].images[0];return {url:`https://photoprobiz.ru/${service.slug}/`,image:`https://photoprobiz.ru/${image.src}`,title:image.alt};}),
+ ...Object.values(servicePages).map(service=>{const image=serviceGallery[service.galleryKey].images[service.galleryImageIndices[0]];return {url:`https://photoprobiz.ru/${service.slug}/`,image:`https://photoprobiz.ru/${image.src}`,title:image.alt};}),
 ];
 const xmlEscape=(value:string)=>value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const sitemap='<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n'+sitemapPages.map(page=>`  <url><loc>${xmlEscape(page.url)}</loc><image:image><image:loc>${xmlEscape(page.image)}</image:loc><image:title>${xmlEscape(page.title)}</image:title></image:image></url>`).join('\n')+'\n</urlset>\n';

@@ -104,15 +104,15 @@
 .service-header nav a:hover::after, .service-header nav a:focus-visible::after, .service-header nav a[aria-current='page']::after { transform: scaleX(1); }
 .service-header-cta { justify-self: end; padding: 12px 18px; border: 1px solid #75675e; color: #fff; font-size: 12px; font-weight: 800; letter-spacing: .65px; text-decoration: none; text-transform: uppercase; }
 .service-page { color: #211c19; background: #fff; font-family: TildaSans, Arial, sans-serif; }
-.service-hero { display: grid; grid-template-columns: minmax(0, .86fr) minmax(0, 1.14fr); min-height: min(760px, calc(100vh - 84px)); background: #171412; color: #fff; }
+.service-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, .72fr); min-height: min(760px, calc(100vh - 84px)); background: #171412; color: #fff; }
 .service-hero-copy { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: clamp(64px, 8vw, 150px) clamp(32px, 7vw, 132px); }
 .service-eyebrow, .service-section-label { margin: 0 0 20px; color: #b89c88; font-size: 13px; font-weight: 800; letter-spacing: 1.8px; text-transform: uppercase; }
 .service-hero h1 { max-width: 720px; margin: 0; font-size: clamp(44px, 5.2vw, 94px); font-weight: 900; line-height: .96; letter-spacing: -2.8px; text-wrap: balance; }
 .service-lead { max-width: 640px; margin: 32px 0 42px; color: #e1dcd8; font-size: clamp(18px, 1.25vw, 24px); line-height: 1.55; }
 .service-primary-cta { display: inline-flex; min-height: 52px; align-items: center; justify-content: center; padding: 0 28px; border: 1px solid #b89c88; background: #a38773; color: #fff; font-size: 13px; font-weight: 800; letter-spacing: .8px; text-decoration: none; text-transform: uppercase; transition: background-color .2s, color .2s; }
 .service-primary-cta:hover, .service-primary-cta:focus-visible { background: #fff; color: #211c19; }
-.service-hero-photo { display: block; min-height: 100%; overflow: hidden; }
-.service-hero-photo img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.service-hero-photo { display: block; width: min(78%, 560px); aspect-ratio: 3 / 4; align-self: center; justify-self: center; overflow: hidden; margin: clamp(38px, 5vw, 76px) clamp(28px, 5vw, 72px); background: #29231f; box-shadow: 0 24px 70px rgba(0, 0, 0, .34); }
+.service-hero-photo img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
 .service-copy { display: grid; grid-template-columns: minmax(280px, .78fr) minmax(0, 1.22fr); gap: clamp(48px, 8vw, 150px); max-width: 1440px; margin: 0 auto; padding: clamp(90px, 10vw, 170px) clamp(28px, 6vw, 96px); }
 .service-copy h2, .service-benefits h2, .service-gallery h2, .service-contact h2 { margin: 0; font-size: clamp(34px, 3.2vw, 58px); font-weight: 900; line-height: 1.05; letter-spacing: -1.4px; text-wrap: balance; }
 .service-copy > div:last-child { padding-top: 30px; }
@@ -123,10 +123,10 @@
 .service-benefits li { min-height: 180px; padding: 34px; background: #f3ede8; font-size: 19px; font-weight: 700; line-height: 1.45; }
 .service-benefits li::before { display: block; content: '✓'; margin-bottom: 24px; color: #8b6f5c; font-size: 22px; }
 .service-gallery { max-width: 1600px; margin: 0 auto; padding: clamp(90px, 10vw, 170px) clamp(20px, 4vw, 64px); }
-.service-gallery > div { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: clamp(260px, 28vw, 500px); gap: 12px; margin-top: 54px; }
-.service-gallery picture { display: block; overflow: hidden; background: #eee; }
-.service-gallery-wide { grid-column: span 2; }
-.service-gallery img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
+.service-gallery > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(12px, 1.3vw, 20px); margin-top: 54px; }
+.service-gallery > .service-gallery-grid--four { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 960px; }
+.service-gallery picture { display: block; aspect-ratio: 3 / 4; overflow: hidden; background: #eee; }
+.service-gallery img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center top; transition: transform .5s ease; }
 .service-gallery picture:hover img { transform: scale(1.025); }
 .service-contact { display: flex; align-items: center; justify-content: space-between; gap: 40px; padding: clamp(70px, 8vw, 130px) clamp(28px, 8vw, 150px); background: #171412; color: #fff; }
 .service-contact h2 { max-width: 900px; }
@@ -150,6 +150,7 @@
   .service-header nav { display: none; }
   .service-hero { min-height: 680px; }
   .service-benefits ul { grid-template-columns: repeat(2, 1fr); }
+  .service-gallery > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
   .service-header { min-height: 72px; padding: 14px 20px; }
@@ -158,15 +159,15 @@
   .service-hero { display: flex; min-height: auto; flex-direction: column; }
   .service-hero-copy { min-height: 540px; padding: 70px 24px; }
   .service-hero h1 { font-size: clamp(42px, 13vw, 66px); letter-spacing: -1.8px; }
-  .service-hero-photo { min-height: 72vh; }
+  .service-hero-photo { width: calc(100% - 48px); max-width: 560px; margin: 0 auto 64px; }
   .service-copy { grid-template-columns: 1fr; gap: 30px; padding: 88px 24px; }
   .service-copy > div:last-child { padding-top: 0; }
   .service-benefits { padding: 80px 24px; }
   .service-benefits ul { grid-template-columns: 1fr; margin-top: 44px; }
   .service-benefits li { min-height: 130px; }
   .service-gallery { padding: 88px 12px; }
-  .service-gallery > div { grid-template-columns: 1fr; grid-auto-rows: 70vh; gap: 8px; margin-top: 36px; }
-  .service-gallery-wide { grid-column: auto; }
+  .service-gallery > div { grid-template-columns: 1fr; gap: 10px; margin-top: 36px; }
+  .service-gallery > .service-gallery-grid--four { grid-template-columns: 1fr; max-width: none; }
   .service-contact { align-items: flex-start; flex-direction: column; padding: 80px 24px; }
   .service-footer { flex-direction: column; padding: 26px 24px; }
   .service-footer nav { justify-content: flex-start; }

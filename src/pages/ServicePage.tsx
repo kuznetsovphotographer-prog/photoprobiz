@@ -19,7 +19,7 @@ function localSrcSet(srcSet: string | undefined, basePath: string) {
 export function ServicePage({ serviceKey, basePath = '../' }: { serviceKey: string; basePath?: string }) {
   const page = servicePages[serviceKey];
   const gallery = (galleries as Record<string, GalleryData>)[page.galleryKey];
-  const images = gallery.images.slice(0, 6);
+  const images = page.galleryImageIndices.map(index => gallery.images[index]).filter(Boolean);
   const hero = images[0];
 
   return <>
@@ -42,7 +42,7 @@ export function ServicePage({ serviceKey, basePath = '../' }: { serviceKey: stri
           <a className="service-primary-cta" href={`${basePath}#inquiry`}>Обсудить съёмку</a>
         </div>
         <picture className="service-hero-photo">
-          <img src={basePath + hero.src} srcSet={localSrcSet(hero.srcSet, basePath)} sizes="(max-width: 799px) 100vw, 50vw" width={hero.width} height={hero.height} alt={hero.alt} loading="eager" fetchPriority="high" decoding="async" />
+          <img src={basePath + hero.src} srcSet={localSrcSet(hero.srcSet, basePath)} sizes="(max-width: 760px) calc(100vw - 48px), (max-width: 1050px) 38vw, 32vw" width={hero.width} height={hero.height} alt={hero.alt} loading="eager" fetchPriority="high" decoding="async" />
         </picture>
       </section>
       <section className="service-copy" aria-label={`О съёмке: ${page.title}`}>
@@ -56,8 +56,8 @@ export function ServicePage({ serviceKey, basePath = '../' }: { serviceKey: stri
       <section className="service-gallery" aria-labelledby={`${serviceKey}-gallery`}>
         <p className="service-section-label">Портфолио</p>
         <h2 id={`${serviceKey}-gallery`}>{page.galleryTitle}</h2>
-        <div>{images.slice(1).map((image, index) => <picture key={image.src} className={index === 0 ? 'service-gallery-wide' : undefined}>
-          <img src={basePath + image.src} srcSet={localSrcSet(image.srcSet, basePath)} sizes="(max-width: 679px) 100vw, 33vw" width={image.width} height={image.height} alt={image.alt} loading="lazy" decoding="async" />
+        <div className={images.length === 5 ? 'service-gallery-grid--four' : undefined}>{images.slice(1).map(image => <picture key={image.src}>
+          <img src={basePath + image.src} srcSet={localSrcSet(image.srcSet, basePath)} sizes="(max-width: 760px) calc(100vw - 24px), (max-width: 1050px) 50vw, 33vw" width={image.width} height={image.height} alt={image.alt} loading="lazy" decoding="async" />
         </picture>)}</div>
       </section>
       <section className="service-contact">
