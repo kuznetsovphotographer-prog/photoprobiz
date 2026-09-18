@@ -113,6 +113,23 @@ function RetouchComparison({basePath}:{basePath:string}) {
   </div>;
 }
 
+function YandexReviewLink() {
+  return <a
+    className="yandex-review-link"
+    href="https://yandex.ru/profile/174489408846?add-review=true"
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Написать отзыв в Яндексе"
+    title="Оставить отзыв в Яндексе"
+  >
+    <span className="yandex-review-link__mark" aria-hidden="true">Я</span>
+    <span className="yandex-review-link__label">Написать отзыв</span>
+    <svg className="yandex-review-link__arrow" viewBox="0 0 12 12" aria-hidden="true">
+      <path d="M3 9 9 3M4 3h5v5" />
+    </svg>
+  </a>;
+}
+
 function Node({node, basePath, galleryHref}:{node:DesignNode;basePath:string;galleryHref?:string}) {
   const attributes: Record<string, unknown> = {...node.attrs, className:'design-node '+node.className};
   const imageGalleryLink = imageGalleryLinks[node.className];
@@ -158,5 +175,8 @@ function Node({node, basePath, galleryHref}:{node:DesignNode;basePath:string;gal
 export function DesignSection({section,basePath='./'}:{section:SectionData;basePath?:string}) {
   const tag=section.id==='header'?'header':section.id==='footer'?'footer':'section';
   return createElement(tag,{id:section.anchor ?? section.id,className:'page-section section-'+section.id,'data-section':section.id},
-    <div className="canvas">{section.nodes.map(n=><Node key={n.className} node={n} basePath={basePath}/>)}</div>);
+    <div className="canvas">
+      {section.nodes.map(n=><Node key={n.className} node={n} basePath={basePath}/>)}
+      {section.id === 'footer' && <YandexReviewLink/>}
+    </div>);
 }
