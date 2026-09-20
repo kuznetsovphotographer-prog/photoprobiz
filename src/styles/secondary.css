@@ -228,7 +228,10 @@
 }
 
 @media (max-width: 479px) {
-  .section-clients .n1425 { display: none; }
+  .section-clients .n1425 {
+    display: table;
+    top: 90.625vw;
+  }
   .page-section.section-about {
     height: max(1376px, calc(915px * var(--mobile-scale) + 452px));
     overflow: hidden;
