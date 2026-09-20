@@ -228,6 +228,7 @@
 }
 
 @media (max-width: 479px) {
+  .section-clients .n1425 { display: none; }
   .page-section.section-about {
     height: max(1376px, calc(915px * var(--mobile-scale) + 452px));
     overflow: hidden;
