@@ -38,6 +38,16 @@
   43.5%{transform:rotate(-3deg) translateX(-.2px)}
 }
 
+/* Keep the primary header action readable over every slideshow frame. */
+.section-header .n22,
+.section-header .n22:visited,
+.section-header .n22:hover,
+.section-header .n22:focus,
+.section-header .n22:focus-visible,
+.section-header .n22:active{
+  border-color:#fff!important;
+}
+
 .section-office-content .n205 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}
 .section-office-content:has(:is(.n205:hover,.n205:focus-visible)) .n205 > .reveal-layer{opacity:0.9!important;transform:translate(0px,0px) scale(1.02,1.02) rotate(0deg)!important}
 .section-office-content .n226 > .reveal-layer{transition:transform 300ms cubic-bezier(0.4, 0, 0.2, 1),opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)}
