@@ -16,6 +16,23 @@ const imageMap = assets as Record<string, {src:string;srcSet?:string;width:numbe
 const before = imageMap['https://static.tildacdn.com/tild6664-6164-4430-b764-366339393434/2298.jpg'];
 const after = imageMap['https://static.tildacdn.com/tild3339-6633-4434-a337-303539336537/2298_1.JPG'];
 const teamCardClasses = new Set(['n731', 'n757', 'n787', 'n811', 'n835', 'n859']);
+const transparentPixel = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+const desktopHeroSlides = [
+  { src: 'images/desktop-slideshow/biznes-portret-rukovoditelnitsy-v-kostyume.avif', width: 3732, height: 2100, position: '58% 50%' },
+  { src: 'images/desktop-slideshow/imidzhevaya-syemka-muzhchiny-s-tenyami-ot-palm.avif', width: 3732, height: 2100, position: '48% 50%' },
+  { src: 'images/desktop-slideshow/biznes-portret-muzhchiny-v-zhilete-interier-moskva.avif', width: 3734, height: 2100, position: '60% 50%' },
+  { src: 'images/desktop-slideshow/zhenskiy-portret-rukovoditelya-u-okna-moskva.avif', width: 3736, height: 2100, position: '70% 50%' },
+  { src: 'images/desktop-slideshow/3968.avif', width: 3150, height: 2100, position: '52% 50%' },
+  { src: 'images/desktop-slideshow/zhenskiy-portret-v-dizaynerskom-interiere.avif', width: 3734, height: 2100, position: '58% 50%' },
+  { src: 'images/desktop-slideshow/imidzhevaya-syemka-muzhchiny-v-ofise.avif', width: 3732, height: 2100, position: '63% 50%' },
+  { src: 'images/desktop-slideshow/imidzhevyy-portret-muzhchiny-v-bordovom-pidiake-v-restorane.avif', width: 3732, height: 2100, position: '58% 50%' },
+  { src: 'images/desktop-slideshow/klassicheskiy-muzhskoy-biznes-portret-na-temnom-fone.avif', width: 3732, height: 2100, position: '62% 50%' },
+  { src: 'images/desktop-slideshow/kreativnyy-muzhskoy-portret-na-skamyie-moskva.avif', width: 3734, height: 2100, position: '50% 50%' },
+  { src: 'images/desktop-slideshow/muzhskoy-delovoy-portret-rukovoditelya-v-lofte.avif', width: 3319, height: 2100, position: '48% 50%' },
+  { src: 'images/desktop-slideshow/muzhskoy-portret-v-biblioteke-moskva.avif', width: 3734, height: 2100, position: '58% 50%' },
+  { src: 'images/desktop-slideshow/stilniy-muzhskoy-portret-u-studiynoy-dekoratsii.avif', width: 3728, height: 2100, position: '62% 50%' },
+  { src: 'images/desktop-slideshow/yurist-v-ochkakh-za-noutbukom-v-serom-pidiake-interyernyy-portret.avif', width: 3734, height: 2100, position: '60% 50%' },
+] as const;
 const imageGalleryLinks: Record<string, { href: string; label: string }> = {
   n188: { href: '#popup:office-setup', label: 'Подробнее о мобильной фотостудии в офисе' },
   n52: { href: '#popup:person3', label: 'Открыть галерею Натальи Лебедевой' },
@@ -95,12 +112,27 @@ function Photo({ image, basePath }: {image: NonNullable<DesignNode['image']>;bas
   const srcSet = image.srcSet?.replace(/(^|,\s*)([^\s,]+)/g, (_m, separator, src) => separator + basePath + src);
   const isHero = image.original === heroAvif.original;
   const localize = (value:string) => value.replace(/(^|,\s*)([^\s,]+)/g,(_m,sep,src)=>sep+basePath+src);
-  return <picture className="photo">
+  const staticPhoto = <picture className={`photo${isHero ? ' hero-photo-static' : ''}`}>
     {isHero && <source media="(min-width: 1200px)" type="image/avif" srcSet={localize(desktopHero.formats.avif.srcSet)} sizes={desktopHero.sizes}/>} 
     {isHero && <source media="(min-width: 1200px)" type="image/webp" srcSet={localize(desktopHero.formats.webp.srcSet)} sizes={desktopHero.sizes}/>} 
     {isHero && <source type="image/avif" srcSet={localize(heroAvif.srcSet)} sizes={image.sizes}/>} 
     <img src={basePath + image.src} srcSet={srcSet} sizes={image.sizes ?? '(max-width: 479px) 90vw, (max-width: 959px) 600px, 650px'} width={image.width} height={image.height} alt={isHero ? desktopHero.alt : image.alt} loading={image.critical ? 'eager' : 'lazy'} fetchPriority={image.critical ? 'high' : 'low'} decoding="async" />
   </picture>;
+  if (!isHero) return staticPhoto;
+  return <>
+    {staticPhoto}
+    <div className="desktop-hero-slideshow" data-desktop-hero-slideshow role="img" aria-label={desktopHero.alt}>
+      <picture className="desktop-hero-slide is-active" aria-hidden="true">
+        <source media="(min-width: 1200px)" type="image/avif" srcSet={localize(desktopHero.formats.avif.srcSet)} sizes={desktopHero.sizes}/>
+        <source media="(min-width: 1200px)" type="image/webp" srcSet={localize(desktopHero.formats.webp.srcSet)} sizes={desktopHero.sizes}/>
+        <img src={transparentPixel} width={desktopHero.width} height={desktopHero.height} alt="" loading="eager" fetchPriority="high" decoding="async" />
+      </picture>
+      {desktopHeroSlides.map((slide) => <picture key={slide.src} className="desktop-hero-slide" aria-hidden="true">
+        <source media="(min-width: 1200px)" type="image/avif" data-srcset={basePath + slide.src}/>
+        <img src={transparentPixel} width={slide.width} height={slide.height} alt="" loading="lazy" fetchPriority="low" decoding="async" style={{objectPosition: slide.position}} />
+      </picture>)}
+    </div>
+  </>;
 }
 
 function RetouchComparison({basePath}:{basePath:string}) {

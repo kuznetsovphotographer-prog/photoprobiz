@@ -7,6 +7,7 @@ import './styles/base.css';
 import './styles/interaction-states.css';
 import './styles/forms.css';
 import './styles/secondary.css';
+import './styles/desktop-hero-slideshow.css';
 
 const basePath=document.body.dataset.basePath || './';
 const uiRoot=createRoot(document.getElementById('ui-root')!);
@@ -105,6 +106,68 @@ if(document.querySelector('.section-header')){
   compactNavigationRoot.id='compact-navigation-root';
   document.body.append(compactNavigationRoot);
   createRoot(compactNavigationRoot).render(<CompactNavigation/>);
+}
+
+const desktopHeroSlideshow=document.querySelector<HTMLElement>('[data-desktop-hero-slideshow]');
+if(desktopHeroSlideshow){
+  const slides=Array.from(desktopHeroSlideshow.querySelectorAll<HTMLElement>('.desktop-hero-slide'));
+  const desktopMedia=matchMedia('(min-width: 1200px)');
+  const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
+  let activeIndex=0;
+  let preloadTimer:number|undefined;
+  let transitionTimer:number|undefined;
+  let isHeroVisible=false;
+  const loading=new Map<number,Promise<void>>();
+
+  const preload=(index:number)=>{
+    const pending=loading.get(index);
+    if(pending)return pending;
+    const slide=slides[index];
+    const source=slide?.querySelector<HTMLSourceElement>('source[data-srcset]');
+    if(source?.dataset.srcset&&!source.srcset)source.srcset=source.dataset.srcset;
+    const image=slide?.querySelector<HTMLImageElement>('img');
+    const sourceUrl=source?.dataset.srcset||image?.currentSrc||image?.src;
+    if(!sourceUrl)return Promise.resolve();
+    const loader=new Image();
+    const promise=new Promise<void>(resolve=>{
+      loader.onload=()=>resolve();
+      loader.onerror=()=>resolve();
+      loader.src=sourceUrl;
+      if(loader.complete)resolve();
+    });
+    loading.set(index,promise);
+    return promise;
+  };
+  const stop=()=>{
+    if(preloadTimer!==undefined)clearTimeout(preloadTimer);
+    if(transitionTimer!==undefined)clearTimeout(transitionTimer);
+    preloadTimer=undefined;
+    transitionTimer=undefined;
+  };
+  const canRun=()=>desktopMedia.matches&&!reducedMotion.matches&&!document.hidden&&isHeroVisible&&slides.length>1;
+  const schedule=()=>{
+    stop();
+    if(!canRun())return;
+    const nextIndex=(activeIndex+1)%slides.length;
+    preloadTimer=window.setTimeout(()=>void preload(nextIndex),2500);
+    transitionTimer=window.setTimeout(async()=>{
+      await preload(nextIndex);
+      if(!canRun())return;
+      slides[activeIndex].classList.remove('is-active');
+      activeIndex=nextIndex;
+      slides[activeIndex].classList.add('is-active');
+      schedule();
+    },4000);
+  };
+
+  const visibilityObserver=new IntersectionObserver(([entry])=>{
+    isHeroVisible=entry.isIntersecting;
+    schedule();
+  },{threshold:0.15});
+  visibilityObserver.observe(desktopHeroSlideshow);
+  desktopMedia.addEventListener('change',schedule);
+  reducedMotion.addEventListener('change',schedule);
+  document.addEventListener('visibilitychange',schedule);
 }
 if(location.hash.startsWith('#popup:')||location.hash==='#mobilemenu')void showPopup(location.hash);
 
