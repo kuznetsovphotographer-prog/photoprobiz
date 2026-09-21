@@ -16,18 +16,41 @@
 .design-node.btn-anim:hover .line,.design-node.btn-anim:focus-visible .line{width:100%!important}
 .design-node.btn-anim:hover .btn-text,.design-node.btn-anim:focus-visible .btn-text{opacity:.8}
 
-/* The header phone link keeps one stable light icon while it rings. */
+/* The header phone link sweeps from warm beige to white while it rings. */
 .section-header .n20{overflow:visible}
 .section-header .n20 .button-content > [aria-hidden="true"][style*="--hover-icon"]{
   flex:0 0 10px!important;
-  background-image:url('/icons/phone-flip-solid-nor-d71426c1e.svg')!important;
+  background-image:linear-gradient(90deg,#fff 0 40%,#d4c5b9 50% 100%)!important;
+  background-position:100% 50%!important;
+  background-repeat:no-repeat!important;
+  background-size:250% 100%!important;
+  -webkit-mask:url('/icons/phone-flip-solid-nor-d71426c1e.svg') center/contain no-repeat;
+  mask:url('/icons/phone-flip-solid-nor-d71426c1e.svg') center/contain no-repeat;
   transform-origin:50% 66%;
+  transition:background-position 280ms linear;
   will-change:transform;
 }
-.section-header .n20 .button-text{display:inline-block;transform-origin:left center;transition:transform 180ms ease-out}
+.section-header .n20 .button-text{
+  display:inline-block;
+  background-image:linear-gradient(90deg,#fff 0 40%,#d4c5b9 50% 100%);
+  background-position:100% 50%;
+  background-repeat:no-repeat;
+  background-size:250% 100%;
+  color:transparent!important;
+  -webkit-background-clip:text;
+  background-clip:text;
+  transform-origin:left center;
+  transition:transform 180ms ease-out,background-position 280ms linear;
+}
 @media (hover:hover) and (pointer:fine){
-  .section-header .n20:is(:hover,:focus-visible) .button-text{transform:scale(1.045)}
-  .section-header .n20:is(:hover,:focus-visible) .button-content > [aria-hidden="true"][style*="--hover-icon"]{animation:pp-header-phone-ring 1180ms cubic-bezier(.2,.75,.2,1) infinite}
+  .section-header .n20:is(:hover,:focus-visible) .button-text{
+    background-position:0 50%;
+    transform:scale(1.045);
+  }
+  .section-header .n20:is(:hover,:focus-visible) .button-content > [aria-hidden="true"][style*="--hover-icon"]{
+    background-position:0 50%!important;
+    animation:pp-header-phone-ring 1180ms cubic-bezier(.2,.75,.2,1) infinite;
+  }
 }
 @keyframes pp-header-phone-ring{
   0%,55%,100%{transform:rotate(0deg) translateX(0)}
