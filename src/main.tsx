@@ -11,7 +11,7 @@ import './styles/desktop-hero-slideshow.css';
 
 const basePath=document.body.dataset.basePath || './';
 const uiRoot=createRoot(document.getElementById('ui-root')!);
-type DialogEntry={key:string;variant:'gallery'|'feature'|'form'|'content'|'menu';label:string;child:ReactNode};
+type DialogEntry={key:string;variant:'gallery'|'feature'|'form'|'content'|'legal'|'menu';label:string;child:ReactNode};
 let dialogs:DialogEntry[]=[];
 
 function publishMenuState(){
@@ -28,14 +28,18 @@ async function showPopup(hash:string){
     publishMenuState();
   };
   const contentHash=hash.replace('#popup:','');
-  let child:ReactNode,variant:'gallery'|'feature'|'form'|'content'|'menu'='content';
+  let child:ReactNode,variant:'gallery'|'feature'|'form'|'content'|'legal'|'menu'='content';
   let label='Диалоговое окно';
   if(contentHash.startsWith('myorder')){
     variant='form';label='Заказать фотосессию';
     const packageName=contentHash==='myordermini'?'Минимальный':contentHash==='myorderbase'?'Базовый':contentHash==='myorderfull'?'Полный':undefined;
     child=<LeadForm variant="modal" packageName={packageName} basePath={basePath}/>;
   }else if(contentHash==='privacy'){
-    const {PrivacyPolicy}=await import('./components/PrivacyPolicy');label='Политика конфиденциальности';child=<PrivacyPolicy basePath={basePath}/>;
+    const {PrivacyPolicy}=await import('./components/PrivacyPolicy');
+    variant='legal';label='Политика конфиденциальности';child=<PrivacyPolicy basePath={basePath} popupLinks/>;
+  }else if(contentHash==='consent'){
+    const {ConsentDocument}=await import('./components/ConsentDocument');
+    variant='legal';label='Согласие на обработку персональных данных';child=<ConsentDocument basePath={basePath} popupLinks/>;
   }else if(contentHash==='contacts'){
     const {ContactCard}=await import('./components/ContactCard');label='Контакты';child=<ContactCard/>;
   }else if(contentHash==='office-setup'){
@@ -57,9 +61,12 @@ async function showPopup(hash:string){
     if(!gallery)return;
     variant='gallery';label=gallery.title || 'Фотографии';child=<Gallery gallery={gallery} basePath={basePath}/>;
   }
+  const entry={key:hash,variant,label,child};
   const openedFromMenu = dialogs.at(-1)?.variant === 'menu';
-  if((contentHash==='privacy' || (openedFromMenu && contentHash.startsWith('myorder'))) && dialogs.length && !dialogs.some(d=>d.key===hash)) dialogs.push({key:hash,variant,label,child});
-  else dialogs=[{key:hash,variant,label,child}];
+  const isLegal = contentHash === 'privacy' || contentHash === 'consent';
+  if(isLegal && dialogs.at(-1)?.variant === 'legal') dialogs=[...dialogs.slice(0,-1),entry];
+  else if((isLegal || (openedFromMenu && contentHash.startsWith('myorder'))) && dialogs.length && !dialogs.some(d=>d.key===hash)) dialogs.push(entry);
+  else dialogs=[entry];
   renderDialogs();
 }
 

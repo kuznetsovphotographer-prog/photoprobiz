@@ -44,8 +44,105 @@ body:has(.pp-dialog) .pp-compact-navigation {
   pointer-events: none !important;
   opacity: 0 !important;
 }
+.pp-dialog:has(~ .pp-dialog--legal) > .pp-dialog__close {
+  visibility: hidden;
+}
 .pp-dialog--feature .pp-dialog__panel { width: min(1540px, 100%); }
 .pp-dialog--feature .pp-dialog__close { color: rgba(255, 255, 255, .78); }
+.pp-dialog--legal {
+  padding: 16px clamp(16px, 4vw, 50px);
+  overflow: hidden;
+  background: rgba(0, 0, 0, .84);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.pp-dialog--legal .pp-dialog__panel {
+  width: min(1080px, 100%);
+  height: calc(100vh - 32px);
+  height: calc(100dvh - 32px);
+  overflow: hidden;
+  border-radius: 32px;
+  background: #f8f6f0;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, .32);
+}
+.pp-legal-dialog__toolbar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 76px;
+  box-sizing: border-box;
+  padding: 12px 24px 12px 32px;
+  border-bottom: 1px solid rgba(28, 25, 23, .1);
+  background: #f8f6f0;
+}
+.pp-legal-dialog__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 8px 0 0;
+  border: 0;
+  background: transparent;
+  color: #1c1917;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+.pp-legal-dialog__back svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform .2s ease;
+}
+.pp-legal-dialog__back:hover svg { transform: translateX(-3px); }
+.pp-legal-dialog__back:focus-visible {
+  outline: 2px solid #755a49;
+  outline-offset: 4px;
+}
+.pp-dialog--legal .pp-dialog__close {
+  position: static;
+  flex: none;
+  color: #1c1917;
+}
+.pp-dialog--legal .pp-dialog__close:hover { color: #755a49; }
+.pp-dialog--legal .pp-dialog__close:focus-visible {
+  outline-color: #755a49;
+}
+.pp-legal-dialog__content {
+  height: calc(100% - 76px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: rgba(117, 90, 73, .58) transparent;
+  scrollbar-width: thin;
+}
+.pp-legal-dialog__content .privacy-policy {
+  width: 100%;
+  max-width: none;
+  padding: 48px 42px 64px;
+  border-radius: 0;
+  background: transparent;
+}
+.pp-legal-dialog__content .privacy-policy :is(h1, h2) {
+  max-width: 820px;
+  margin-bottom: 28px;
+  font-size: clamp(30px, 3vw, 42px);
+  line-height: 1.08;
+  letter-spacing: -.5px;
+}
+.pp-legal-dialog__content .privacy-policy-content {
+  max-width: 900px;
+  font-size: 16px;
+  line-height: 1.65;
+}
 .office-setup-feature {
   display: grid;
   grid-template-columns: minmax(340px, .86fr) minmax(460px, 1.14fr);
@@ -355,6 +452,27 @@ body:has(.pp-dialog) .pp-compact-navigation {
 }
 
 @media (max-width: 720px) {
+  .pp-dialog--legal { padding: 8px; }
+  .pp-dialog--legal .pp-dialog__panel {
+    width: 100%;
+    height: calc(100vh - 16px);
+    height: calc(100dvh - 16px);
+    border-radius: 22px;
+  }
+  .pp-legal-dialog__toolbar {
+    min-height: 64px;
+    padding: 8px 10px 8px 18px;
+  }
+  .pp-legal-dialog__back { gap: 7px; min-height: 42px; font-size: 14px; }
+  .pp-dialog--legal .pp-dialog__close { width: 42px; height: 42px; }
+  .pp-legal-dialog__content { height: calc(100% - 64px); }
+  .pp-legal-dialog__content .privacy-policy { padding: 30px 22px 48px; }
+  .pp-legal-dialog__content .privacy-policy :is(h1, h2) {
+    margin-bottom: 22px;
+    font-size: clamp(26px, 8vw, 34px);
+    line-height: 1.12;
+  }
+  .pp-legal-dialog__content .privacy-policy-content { font-size: 15px; line-height: 1.58; }
   .pp-dialog--feature { padding: 64px 18px 24px; }
   .pp-dialog--feature .pp-dialog__panel { width: 100%; }
   .office-setup-feature {
@@ -394,7 +512,7 @@ body:has(.pp-dialog) .pp-compact-navigation {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pp-gallery *, .office-setup-feature *, .pp-dialog__close { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  .pp-gallery *, .office-setup-feature *, .pp-dialog__close, .pp-legal-dialog__back svg { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
 @media (max-width: 639px) {
   .pp-dialog--form { padding: 50px 0 0; }

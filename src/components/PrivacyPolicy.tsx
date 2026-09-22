@@ -1,10 +1,10 @@
 import { privacyHtml } from '../data/privacy';
 import { legalHtml } from './ConsentDocument';
 
-export function PrivacyPolicy({ basePath = './', standalone = false }: { basePath?: string; standalone?: boolean }) {
+export function PrivacyPolicy({ basePath = './', standalone = false, popupLinks = false }: { basePath?: string; standalone?: boolean; popupLinks?: boolean }) {
   const Heading = standalone ? 'h1' : 'h2';
   return <article className="privacy-policy" aria-labelledby="privacy-policy-title">
     <Heading id="privacy-policy-title">Политика в отношении обработки персональных данных</Heading>
-    <div className="privacy-policy-content" dangerouslySetInnerHTML={{ __html: legalHtml(privacyHtml, basePath) }} />
+    <div className="privacy-policy-content" dangerouslySetInnerHTML={{ __html: legalHtml(privacyHtml, basePath, popupLinks) }} />
   </article>;
 }

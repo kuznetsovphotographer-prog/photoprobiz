@@ -4,7 +4,7 @@ import '../styles/dialog.css';
 export interface DialogProps {
   children: ReactNode;
   onClose: () => void;
-  variant?: 'gallery' | 'feature' | 'form' | 'content' | 'menu';
+  variant?: 'gallery' | 'feature' | 'form' | 'content' | 'legal' | 'menu';
   label: string;
 }
 
@@ -170,10 +170,23 @@ export function Dialog({ children, onClose, variant = 'content', label }: Dialog
         backdropPointer.current = false;
       }}
     >
-      <button ref={closeRef} className="pp-dialog__close" type="button" onClick={onClose} aria-label="Закрыть окно">
-        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="m3 3 18 18M21 3 3 21" /></svg>
-      </button>
-      <div className="pp-dialog__panel">{children}</div>
+      {variant === 'legal' ? <div className="pp-dialog__panel">
+        <header className="pp-legal-dialog__toolbar">
+          <button ref={closeRef} className="pp-legal-dialog__back" type="button" onClick={onClose} data-autofocus>
+            <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="m15 5-7 7 7 7M8 12h12" /></svg>
+            <span>Вернуться к заявке</span>
+          </button>
+          <button className="pp-dialog__close" type="button" onClick={onClose} aria-label="Закрыть документ и вернуться к заявке">
+            <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="m3 3 18 18M21 3 3 21" /></svg>
+          </button>
+        </header>
+        <div className="pp-legal-dialog__content">{children}</div>
+      </div> : <>
+        <button ref={closeRef} className="pp-dialog__close" type="button" onClick={onClose} aria-label="Закрыть окно">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="m3 3 18 18M21 3 3 21" /></svg>
+        </button>
+        <div className="pp-dialog__panel">{children}</div>
+      </>}
     </div>
   );
 }
