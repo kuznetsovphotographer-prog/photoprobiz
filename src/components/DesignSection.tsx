@@ -4,6 +4,7 @@ import assets from '../data/assets.json';
 import heroAvif from '../data/hero-avif.json';
 import desktopHero from '../data/desktop-hero.json';
 import { galleryImageCounts } from '../data/galleryCounts';
+import { telegramContactUrl } from '../data/contactMessage';
 
 export type DesignNode = {
   tag: string; className: string; attrs: Record<string, string>;
@@ -193,6 +194,7 @@ function Node({node, basePath, galleryHref}:{node:DesignNode;basePath:string;gal
   }
   if (attributes.tabindex) {attributes.tabIndex=attributes.tabindex;delete attributes.tabindex;}
   if (attributes.href === 'https://photoprobiz.ru/' || attributes.href === 'https://photoprobiz.ru') attributes.href=basePath;
+  if (attributes.href === 'https://t.me/alkruze') attributes.href=telegramContactUrl;
   if (attributes.target === '_blank') attributes.rel='noopener noreferrer';
   if (node.widget === 'inline-form') return createElement('div',attributes,<div data-form-root="inline"><LeadForm variant="inline" basePath={basePath}/></div>);
   if (node.widget === 'retouch') return createElement('div',attributes,<RetouchComparison basePath={basePath}/>);
