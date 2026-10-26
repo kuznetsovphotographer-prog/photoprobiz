@@ -25,9 +25,8 @@ export function BackToTopIcon() {
 export function CameraNavigationIcon() {
   return (
     <svg className="pp-navigation-camera-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M8 6.5 9.5 4h5L16 6.5h4a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 18V8A1.5 1.5 0 0 1 4 6.5Z" />
-      <circle cx="12" cy="12.5" r="4" />
-      <path d="M18 9h.5" />
+      <path fillRule="evenodd" d="M9 3.5h6a1.5 1.5 0 0 1 1.2.6L17.6 6H20a2.5 2.5 0 0 1 2.5 2.5V18a2.5 2.5 0 0 1-2.5 2.5H4A2.5 2.5 0 0 1 1.5 18V8.5A2.5 2.5 0 0 1 4 6h2.4l1.4-1.9A1.5 1.5 0 0 1 9 3.5Zm3 5.75a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" />
+      <circle cx="12" cy="13.25" r="2.4" />
     </svg>
   );
 }

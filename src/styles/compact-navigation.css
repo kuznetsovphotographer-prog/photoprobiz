@@ -109,11 +109,8 @@
   flex: 0 0 21px;
   width: 21px;
   height: 21px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.65;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  fill: currentColor;
+  stroke: none;
 }
 
 .pp-navigation-tooltip {
@@ -170,7 +167,9 @@
 .pp-quick-contacts a:focus-visible { outline: 1px solid #a38773; outline-offset: 3px; }
 .pp-quick-contacts .contact-icon { flex: 0 0 21px; width: 21px; height: 21px; color: #a38773; }
 .pp-quick-contacts .contact-icon--max_messenger path { fill: currentColor; }
-.pp-quick-contacts .pp-quick-contacts__book { min-height: 48px; margin-top: 12px; padding-top: 9px; border-top: 1px solid rgba(212, 197, 185, .25); color: #d4c5b9; font-weight: 700; }
+.pp-quick-contacts .pp-quick-contacts__book { min-height: 48px; margin-top: 12px; padding-top: 9px; border-top: 1px solid rgba(212, 197, 185, .25); color: #fff; font-weight: 700; }
+.pp-quick-contacts .pp-quick-contacts__book:is(:hover, :focus-visible) { color: #fff; }
+.pp-quick-contacts__book .pp-navigation-camera-icon { color: #a38773; }
 .pp-quick-contacts__status { margin: 12px 0 0; color: #d4c5b9; font-size: 12px; line-height: 1.4; }
 .pp-quick-contacts__status:empty { display: none; }
 
