@@ -239,6 +239,8 @@
 }
 
 @media (max-width: 639px) {
+  /* The original header burger remains a no-JavaScript fallback. */
+  .section-header.has-compact-mobile .n1 { visibility: hidden; pointer-events: none; }
   .pp-compact-navigation__top { display: none; }
 }
 

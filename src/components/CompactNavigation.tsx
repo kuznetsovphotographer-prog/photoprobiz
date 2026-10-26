@@ -7,8 +7,8 @@ import '../styles/compact-navigation.css';
 const compactThreshold = 80;
 
 /**
- * Replaces the fixed header with a compact utility rail after the visitor has
- * moved down the page. Each control follows the section beneath its own icon.
+ * Keeps the mobile utility rail in one position; on larger screens it replaces
+ * the fixed header after scrolling. Controls follow the section beneath them.
  */
 export function CompactNavigation() {
   const [visible, setVisible] = useState(false);
@@ -29,7 +29,10 @@ export function CompactNavigation() {
       const lockedPageOffset = document.body.style.position === 'fixed'
         ? Math.abs(Number.parseFloat(document.body.style.top) || 0)
         : window.scrollY;
-      const nextVisible = lockedPageOffset >= compactThreshold;
+      const headerScrolledAway = lockedPageOffset >= compactThreshold;
+      const mobile = window.matchMedia('(max-width: 639px)').matches;
+      const nextVisible = mobile || headerScrolledAway;
+      const headerBounds = header.getBoundingClientRect();
       const buttonCenter = window.innerWidth < 480 ? 30 : 35;
       const onDarkSection = Array.from(darkSections).some(section => {
         const bounds = section.getBoundingClientRect();
@@ -39,15 +42,16 @@ export function CompactNavigation() {
       navigationRef.current?.querySelectorAll<HTMLElement>(':scope > .pp-navigation-control').forEach(control => {
         const controlBounds = control.getBoundingClientRect();
         const center = (controlBounds.top + controlBounds.bottom) / 2;
-        const darkBackground = Array.from(darkSections).some(section => {
+        const darkBackground = (!headerScrolledAway && headerBounds.top <= center && headerBounds.bottom > center) || Array.from(darkSections).some(section => {
           const bounds = section.getBoundingClientRect();
           return bounds.top <= center && bounds.bottom > center;
         });
         control.dataset.theme = darkBackground ? 'light' : 'dark';
       });
-      header.classList.toggle('is-scrolled-away', nextVisible);
-      header.inert = nextVisible;
-      if (nextVisible) header.setAttribute('aria-hidden', 'true');
+      header.classList.toggle('has-compact-mobile', mobile);
+      header.classList.toggle('is-scrolled-away', headerScrolledAway);
+      header.inert = headerScrolledAway;
+      if (headerScrolledAway) header.setAttribute('aria-hidden', 'true');
       else header.removeAttribute('aria-hidden');
       document.documentElement.dataset.floatingMenuTheme = nextTheme;
       setVisible((current) => current === nextVisible ? current : nextVisible);
@@ -66,6 +70,7 @@ export function CompactNavigation() {
     return () => {
       if (frame) window.cancelAnimationFrame(frame);
       header.classList.remove('is-scrolled-away');
+      header.classList.remove('has-compact-mobile');
       header.inert = false;
       header.removeAttribute('aria-hidden');
       delete document.documentElement.dataset.floatingMenuTheme;
