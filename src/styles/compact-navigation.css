@@ -98,8 +98,6 @@
 
 .pp-navigation-phone-icon {
   transform-origin: 50% 66%;
-  will-change: transform;
-  animation: pp-quick-phone-ring 5s ease-in-out infinite;
 }
 
 .pp-navigation-up-icon { width: 23px; height: 23px; stroke-width: 3; }
@@ -178,14 +176,6 @@
   to { opacity: 1; transform: translateX(0); }
 }
 
-@keyframes pp-quick-phone-ring {
-  0%, 22%, 100% { transform: rotate(0); }
-  3%, 9% { transform: rotate(-12deg); }
-  6%, 12% { transform: rotate(11deg); }
-  15% { transform: rotate(-6deg); }
-  18% { transform: rotate(3deg); }
-}
-
 .pp-compact-navigation__hover-ring {
   position: absolute;
   inset: 0;
@@ -227,7 +217,8 @@
 }
 
 @media (hover: none), (pointer: coarse) {
-  .pp-mobile-navigation__contact:active .pp-navigation-phone-icon {
+  .pp-compact-navigation__contact:is(:active, [data-pressed="true"]) .pp-navigation-phone-icon,
+  .pp-mobile-navigation__contact:is(:active, [data-pressed="true"]) .pp-navigation-phone-icon {
     animation: pp-header-phone-ring 1180ms cubic-bezier(.2, .75, .2, 1) 1;
   }
 
