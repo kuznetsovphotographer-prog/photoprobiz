@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useLayoutEffect, useRef, type ReactNode } from 'react';
 import '../styles/dialog.css';
 
 export interface DialogProps {
@@ -80,6 +80,21 @@ export function Dialog({ children, onClose, variant = 'content', label }: Dialog
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
   const backdropPointer = useRef(false);
+  const closingAnimation = useRef<Animation | null>(null);
+  const requestClose = useCallback(() => {
+    const dialog = dialogRef.current;
+    if (closingAnimation.current) return;
+    if (variant !== 'gallery' || !dialog || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      onCloseRef.current();
+      return;
+    }
+    const animation = dialog.animate([
+      { opacity: getComputedStyle(dialog).opacity },
+      { opacity: 0 },
+    ], { duration: 180, easing: 'ease-out', fill: 'forwards' });
+    closingAnimation.current = animation;
+    void animation.finished.then(() => onCloseRef.current()).catch(() => {});
+  }, [variant]);
 
   useLayoutEffect(() => {
     const dialog = dialogRef.current;
@@ -104,7 +119,7 @@ export function Dialog({ children, onClose, variant = 'content', label }: Dialog
       if (event.key === 'Escape') {
         event.preventDefault();
         event.stopPropagation();
-        onCloseRef.current();
+        requestClose();
       } else if (event.key === 'Tab') {
         const targets = available();
         const first = targets[0];
@@ -123,13 +138,15 @@ export function Dialog({ children, onClose, variant = 'content', label }: Dialog
       if (isTopDialog() && !dialog.contains(event.target as Node) && event.target !== externalMenuToggle) focusInitial();
     };
     const handleMenuClose = () => {
-      if (variant === 'menu' && isTopDialog()) onCloseRef.current();
+      if (variant === 'menu' && isTopDialog()) requestClose();
     };
     document.addEventListener('keydown', handleKeyDown, true);
     document.addEventListener('focusin', handleFocus);
     document.addEventListener('pp:close-menu', handleMenuClose);
     focusInitial();
     return () => {
+      closingAnimation.current?.cancel();
+      closingAnimation.current = null;
       document.removeEventListener('keydown', handleKeyDown, true);
       document.removeEventListener('focusin', handleFocus);
       document.removeEventListener('pp:close-menu', handleMenuClose);
@@ -143,7 +160,7 @@ export function Dialog({ children, onClose, variant = 'content', label }: Dialog
       if (previousFocus?.isConnected && !previousFocus.closest('[inert]')) previousFocus.focus({ preventScroll: true });
       else activeDialogs.at(-1)?.focus({ preventScroll: true });
     };
-  }, []);
+  }, [requestClose, variant]);
 
   return (
     <div
@@ -166,17 +183,17 @@ export function Dialog({ children, onClose, variant = 'content', label }: Dialog
         const clickedFeatureGap = variant === 'feature'
           && target?.classList.contains('office-setup-feature');
         const clickedMenuBackdrop = variant === 'menu' && event.target === event.currentTarget;
-        if (clickedOutsidePhoto || (((event.target === event.currentTarget || clickedFeatureGap) && backdropPointer.current) || clickedMenuBackdrop)) onCloseRef.current();
+        if (clickedOutsidePhoto || (((event.target === event.currentTarget || clickedFeatureGap) && backdropPointer.current) || clickedMenuBackdrop)) requestClose();
         backdropPointer.current = false;
       }}
     >
       {variant === 'legal' ? <div className="pp-dialog__panel">
         <header className="pp-legal-dialog__toolbar">
-          <button ref={closeRef} className="pp-legal-dialog__back" type="button" onClick={onClose} data-autofocus>
+          <button ref={closeRef} className="pp-legal-dialog__back" type="button" onClick={requestClose} data-autofocus>
             <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="m15 5-7 7 7 7M8 12h12" /></svg>
             <span>Вернуться к заявке</span>
           </button>
-          <button className="pp-dialog__close" type="button" onClick={onClose} aria-label="Закрыть документ и вернуться к заявке">
+          <button className="pp-dialog__close" type="button" onClick={requestClose} aria-label="Закрыть документ и вернуться к заявке">
             <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="m3 3 18 18M21 3 3 21" /></svg>
           </button>
         </header>
@@ -184,13 +201,13 @@ export function Dialog({ children, onClose, variant = 'content', label }: Dialog
       </div> : variant === 'form' ? <div className="pp-dialog__panel">
         <header className="pp-form-dialog__toolbar">
           <h2>Заказать съёмку</h2>
-          <button ref={closeRef} className="pp-dialog__close" type="button" onClick={onClose} aria-label="Закрыть окно">
+          <button ref={closeRef} className="pp-dialog__close" type="button" onClick={requestClose} aria-label="Закрыть окно">
             <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="m3 3 18 18M21 3 3 21" /></svg>
           </button>
         </header>
         <div className="pp-form-dialog__content">{children}</div>
       </div> : <>
-        <button ref={closeRef} className="pp-dialog__close" type="button" onClick={onClose} aria-label="Закрыть окно">
+        <button ref={closeRef} className="pp-dialog__close" type="button" onClick={requestClose} aria-label="Закрыть окно">
           <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="m3 3 18 18M21 3 3 21" /></svg>
         </button>
         <div className="pp-dialog__panel">{children}</div>

@@ -482,6 +482,85 @@
   .section-studio-content .n355 { width: 348px !important; }
 }
 
+/* Keep the supporting cover copy in the heading's own column. */
+.section-hero .n27,
+.section-hero .n28 { height: auto; }
+.section-hero .n28 > * { flex-shrink: 0; }
+.section-hero .hero-description {
+  width: min(540px, calc(100vw - 40px));
+  /* Match the visible text gap above the title, allowing for font metrics. */
+  margin: -2px 0 0;
+  font-family: TildaSans, Arial, sans-serif;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #f2ece7;
+  text-align: center;
+  text-wrap: pretty;
+  text-shadow: 0 2px 12px rgb(0 0 0 / 35%);
+}
+.hero-typewriter-readable {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.hero-typewriter-letter {
+  opacity: 0;
+  animation: hero-typewriter-letter 44ms step-start forwards;
+  animation-delay: calc(160ms + var(--letter-index) * 44ms);
+}
+@keyframes hero-typewriter-letter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-typewriter-letter { animation: none; opacity: 1; }
+}
+@media (max-width: 1199px) {
+  /* Move the existing portrait as a whole, including its edge fades. */
+  .section-hero .n25 { translate: 0 150px; }
+}
+@media (max-width: 479px) {
+  .section-hero .n27 { top: 12px; }
+  .section-hero .n25 { translate: 0 90px; }
+  .section-hero .canvas {
+    height: max(600px, calc(100svh - round(down, calc(60px * var(--mobile-scale)), 1px))) !important;
+  }
+}
+@media (min-width: 480px) and (max-width: 639px) {
+  .section-hero .hero-description { margin-top: -3px; }
+  .section-hero .n25 { translate: 0 90px; }
+  .section-hero .canvas { height: max(600px, calc(100svh - 60px)) !important; }
+}
+@media (min-width: 640px) and (max-width: 959px) {
+  .section-hero .canvas { height: max(1020px, calc(100svh - 60px)) !important; }
+}
+@media (min-width: 960px) and (max-width: 1199px) {
+  .section-hero .hero-description { margin-top: -3px; }
+  .section-hero .canvas { height: max(950px, calc(100svh - 80px)) !important; }
+}
+@media (min-width: 1200px) {
+  .section-hero .hero-description { width: 740px; margin-top: -5px; font-size: 28px; }
+  /* A feathered scrim supports the entire text column without a visible card. */
+  .section-hero .n25::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg,
+      rgb(0 0 0 / 72%) 0%,
+      rgb(0 0 0 / 64%) 28%,
+      rgb(0 0 0 / 32%) 43%,
+      rgb(0 0 0 / 8%) 56%,
+      transparent 68%);
+    pointer-events: none;
+  }
+}
+
 /* Vertically balance the office-studio copy with its portrait image. */
 @media (min-width: 960px) and (max-width: 1199px) {
   .section-office-content .n216 { top: 1194px; }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 'react';
 import '../styles/dialog.css';
 
 export interface GalleryImage {
@@ -52,7 +52,12 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [settlingDirection, setSettlingDirection] = useState<-1 | 0 | 1 | null>(null);
+  const [outgoingImage, setOutgoingImage] = useState<GalleryImage | null>(null);
   const galleryRef = useRef<HTMLDivElement>(null);
+  const selectionRequest = useRef(0);
+  const fullscreenImageBefore = useRef<DOMRect | null>(null);
+  const previousFullscreen = useRef(false);
+  const fullscreenPending = useRef(false);
   const pointerStart = useRef<{
     id: number;
     x: number;
@@ -84,26 +89,82 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
   }, [total]);
   const move = useCallback((direction: number) => {
     if (total <= 1 || settlingDirectionRef.current !== null) return;
+    selectionRequest.current += 1;
+    setOutgoingImage(null);
     const normalizedDirection = direction > 0 ? 1 : -1;
     settlingDirectionRef.current = normalizedDirection;
     setDragOffset(0);
     setSettlingDirection(normalizedDirection);
   }, [total]);
+  const setFullscreenMode = useCallback((active: boolean) => {
+    setIsFullscreen(active);
+    if (matchMedia('(max-width: 720px)').matches) setThumbnailsVisible(!active);
+  }, []);
   const toggleFullscreen = useCallback(async () => {
+    if (fullscreenPending.current) return;
+    fullscreenPending.current = true;
+    fullscreenImageBefore.current = galleryRef.current?.querySelector<HTMLImageElement>('.pp-gallery__slide[aria-hidden="false"] img')?.getBoundingClientRect() || null;
     const fullscreenTarget = galleryRef.current?.closest<HTMLElement>('[role="dialog"]') || galleryRef.current;
     try {
       if (document.fullscreenElement) await document.exitFullscreen();
       else if (fullscreenTarget?.requestFullscreen) await fullscreenTarget.requestFullscreen({ navigationUI: 'hide' });
-      else setIsFullscreen((active) => !active);
+      else setFullscreenMode(!isFullscreen);
     } catch {
       // Browser automation and embedded webviews can block the native API. The viewer still expands within its modal.
-      setIsFullscreen((active) => !active);
+      setFullscreenMode(!isFullscreen);
+    } finally {
+      fullscreenPending.current = false;
     }
-  }, []);
+  }, [isFullscreen, setFullscreenMode]);
+
+  const selectImage = async (position: number) => {
+    const request = ++selectionRequest.current;
+    if (position === selected || settlingDirectionRef.current !== null) return;
+    const nextImage = gallery.images[position];
+    const preload = new Image();
+    preload.sizes = imageSizes;
+    preload.srcset = assetSrcSet(nextImage.srcSet, basePath) || '';
+    preload.src = assetUrl(nextImage.src, basePath);
+    // Keep the current photo visible until the replacement can be painted.
+    try { await preload.decode(); } catch { return; }
+    if (request !== selectionRequest.current) return;
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) setOutgoingImage(image);
+    setIndex(position);
+  };
+
+  useEffect(() => () => { selectionRequest.current += 1; }, []);
+
+  useEffect(() => {
+    if (!outgoingImage) return;
+    const timeout = window.setTimeout(() => setOutgoingImage(null), 360);
+    return () => window.clearTimeout(timeout);
+  }, [outgoingImage]);
+
+  useLayoutEffect(() => {
+    if (previousFullscreen.current === isFullscreen) return;
+    previousFullscreen.current = isFullscreen;
+    const before = fullscreenImageBefore.current;
+    fullscreenImageBefore.current = null;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const photo = galleryRef.current?.querySelector<HTMLImageElement>('.pp-gallery__slide[aria-hidden="false"] img');
+    if (!photo) return;
+    const after = photo.getBoundingClientRect();
+    if (!after.width || !after.height) return;
+    const animation = photo.animate(before ? [
+      { transformOrigin: '0 0', transform: `translate(${before.left - after.left}px, ${before.top - after.top}px) scale(${before.width / after.width}, ${before.height / after.height})` },
+      { transformOrigin: '0 0', transform: 'none' },
+    ] : [
+      { opacity: .7, transform: 'scale(.985)' },
+      { opacity: 1, transform: 'none' },
+    ], { duration: 360, easing: 'cubic-bezier(.22, .72, .18, 1)' });
+    return () => animation.cancel();
+  }, [isFullscreen]);
 
   useEffect(() => {
     setIndex(0);
     setThumbnailsVisible(true);
+    selectionRequest.current += 1;
+    setOutgoingImage(null);
     pointerStart.current = null;
     settlingDirectionRef.current = null;
     setSettlingDirection(null);
@@ -117,10 +178,10 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
   }, [finishMove, settlingDirection]);
 
   useEffect(() => {
-    const handleFullscreenChange = () => setIsFullscreen(document.fullscreenElement === (galleryRef.current?.closest<HTMLElement>('[role="dialog"]') || galleryRef.current));
+    const handleFullscreenChange = () => setFullscreenMode(document.fullscreenElement === (galleryRef.current?.closest<HTMLElement>('[role="dialog"]') || galleryRef.current));
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
+  }, [setFullscreenMode]);
 
   useEffect(() => {
     galleryRef.current?.closest('[role="dialog"]')?.scrollTo({ top: 0, behavior: 'instant' });
@@ -150,6 +211,8 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
   const beginSwipe = (event: PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === 'mouse' || settlingDirectionRef.current !== null || (event.target instanceof Element && event.target.closest('button'))) return;
     const now = performance.now();
+    selectionRequest.current += 1;
+    setOutgoingImage(null);
     pointerStart.current = {
       id: event.pointerId,
       x: event.clientX,
@@ -247,7 +310,7 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
       >
         <p className="pp-gallery__count" aria-hidden="true">{selected + 1} / {total}</p>
         <div
-          className={`pp-gallery__track${settlingDirection !== null ? ' is-settling' : ''}`}
+          className={`pp-gallery__track${settlingDirection !== null ? ' is-settling' : ''}${outgoingImage ? ' is-crossfading' : ''}`}
           style={{ transform: trackTransform }}
           onTransitionEnd={(event) => {
             if (event.target === event.currentTarget && event.propertyName === 'transform') finishMove();
@@ -269,10 +332,16 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
                 decoding="async"
                 fetchPriority={currentSlide ? 'high' : 'low'}
                 draggable={false}
+                ref={(element) => { if (element?.complete && element.naturalWidth) element.dataset.loaded = 'true'; }}
+                onLoad={(event) => { event.currentTarget.dataset.loaded = 'true'; }}
+                onError={(event) => { event.currentTarget.dataset.loaded = 'true'; }}
               />
             </div>;
           })}
         </div>
+        {outgoingImage && <div className="pp-gallery__outgoing" aria-hidden="true">
+          <img className="pp-gallery__image" data-loaded="true" src={assetUrl(outgoingImage.src, basePath)} srcSet={assetSrcSet(outgoingImage.srcSet, basePath)} sizes={imageSizes} width={outgoingImage.width} height={outgoingImage.height} alt="" draggable={false} />
+        </div>}
         {total > 1 && <>
           <button className="pp-gallery__arrow pp-gallery__arrow--previous" type="button" onClick={() => move(-1)} aria-label="Предыдущая фотография">
             <svg viewBox="0 0 20 36" aria-hidden="true"><path d="M18 2 2 18l16 16" /></svg>
@@ -282,7 +351,7 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
           </button>
         </>}
       </div>
-      {total > 1 && <aside className="pp-gallery__sidebar" aria-label="Миниатюры фотографий">
+      {total > 1 && <aside className="pp-gallery__sidebar" aria-label="Миниатюры фотографий" aria-hidden={!thumbnailsVisible} inert={!thumbnailsVisible}>
         <div className="pp-gallery__thumbnails">
           {gallery.images.map((item, position) => <button
             key={`${item.src}-${position}`}
@@ -290,7 +359,7 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
             type="button"
             aria-label={`Показать фотографию ${position + 1} из ${total}`}
             aria-current={position === selected ? 'true' : undefined}
-            onClick={() => setIndex(position)}
+            onClick={() => { void selectImage(position); }}
           >
             <img
               src={assetUrl(item.src, basePath)}

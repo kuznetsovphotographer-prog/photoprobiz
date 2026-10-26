@@ -133,6 +133,30 @@ if(document.querySelector('.section-header')){
   createRoot(compactNavigationRoot).render(<CompactNavigation/>);
 }
 
+const heroDescription=document.querySelector<HTMLElement>('.section-hero .hero-description');
+if(heroDescription&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+  const descriptionObserver=new IntersectionObserver(entries=>{
+    if(!entries.some(entry=>entry.isIntersecting))return;
+    descriptionObserver.disconnect();
+    const text=heroDescription.textContent||'';
+    const readable=document.createElement('span');
+    readable.className='hero-typewriter-readable';
+    readable.textContent=text;
+    const visual=document.createElement('span');
+    visual.setAttribute('aria-hidden','true');
+    // Every letter occupies its final place from the start: no layout shifts.
+    for(const [index,character] of Array.from(text).entries()){
+      const letter=document.createElement('span');
+      letter.className='hero-typewriter-letter';
+      letter.style.setProperty('--letter-index',String(index));
+      letter.textContent=character;
+      visual.append(letter);
+    }
+    heroDescription.replaceChildren(readable,visual);
+  },{threshold:0.5});
+  void document.fonts.ready.then(()=>descriptionObserver.observe(heroDescription));
+}
+
 const desktopHeroSlideshow=document.querySelector<HTMLElement>('[data-desktop-hero-slideshow]');
 if(desktopHeroSlideshow){
   const slides=Array.from(desktopHeroSlideshow.querySelectorAll<HTMLElement>('.desktop-hero-slide'));
