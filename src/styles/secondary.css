@@ -25,6 +25,9 @@
 .contact-card .contact-card-copy-status { margin: 8px 0 0; color: #1c1917; font-size: 12px; line-height: 1.45; }
 .contact-card .contact-card-copy-status:empty { display: none; }
 .contact-card .contact-card-message { margin: 8px 0 0; color: #57534e; font-size: 12px; line-height: 1.45; }
+.contact-card-book { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 24px; padding: 16px 20px; border-radius: 100px; background: #755a49; color: #fff; font-size: 15px; font-weight: 700; text-decoration: none; transition: background-color .2s ease; }
+.contact-card-book:is(:hover, :focus-visible) { background: #4a3b32; }
+.contact-card-book:focus-visible { outline: 2px solid #755a49; outline-offset: 4px; }
 
 .privacy-policy { box-sizing: border-box; width: 896px; max-width: 100%; padding: 56px; border-radius: 48px; background: #f8f6f0; color: #57534e; font-family: 'TildaSans', Arial, sans-serif; }
 .privacy-policy :is(h1, h2) { color: #1c1917; font-family: 'TildaSans', Arial, sans-serif; font-size: 30px; font-weight: 900; line-height: 1.2; margin: 0 0 24px; }

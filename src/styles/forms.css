@@ -5,7 +5,7 @@
   min-width: 0;
 }
 .lead-form-card *, .lead-form-card *::before, .lead-form-card *::after { box-sizing: border-box; }
-.lead-form-card--modal { width: 560px; max-width: 100%; padding: 64px 45px 42px; background: #f8f6f0; border-radius: 48px; }
+.lead-form-card--modal { width: 100%; max-width: 100%; padding: 28px 30px 32px; background: transparent; border-radius: 0; }
 .lead-form { margin: 0; min-width: 0; }
 .lead-form fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .lead-field { margin-bottom: 25px; min-width: 0; }
@@ -70,7 +70,7 @@
 .lead-form--inline .lead-submit { width: 100%; max-width: 360px; min-width: 0; height: 52px; min-height: 52px; margin: 10px auto 0; border: 0; border-radius: 6px; color: #fff; background: #755a49; font-size: 15px; font-weight: 600; line-height: normal; letter-spacing: 1.4px; padding: 0 15px; white-space: normal; overflow-wrap: break-word; }
 
 @media (max-width: 639px) {
-  .lead-form-card--modal { width: 100%; min-height: calc(100dvh - 50px); padding: 32px 20px 40px; border-radius: 0 0 48px 48px; }
+  .lead-form-card--modal { padding: 24px 20px 28px; }
   .lead-form--modal .lead-label { font-size: 16px; line-height: 1.5; }
   .lead-form--modal .lead-input, .lead-form--modal .lead-select, .lead-form--modal .lead-phone { height: 50px; }
   .lead-method-options { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }

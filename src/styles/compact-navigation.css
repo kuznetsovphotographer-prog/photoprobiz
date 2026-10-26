@@ -38,6 +38,9 @@
   top: var(--pp-menu-control-top);
   right: var(--pp-menu-control-right);
   z-index: 995;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   visibility: hidden;
   pointer-events: none;
   opacity: 0;
@@ -61,26 +64,28 @@
   margin: 0;
   padding: 0;
   border: 0;
+  border-radius: 50%;
   background: transparent;
+  box-shadow: none;
   color: #fff;
   cursor: pointer;
   place-items: center;
-  transition: color .24s ease, transform .2s ease;
+  transition: color .24s ease, background-color .24s ease, border-color .24s ease, transform .2s ease;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
-:root[data-floating-menu-theme="dark"] .pp-compact-navigation .pp-navigation-control {
+.pp-compact-navigation .pp-navigation-control[data-theme="dark"] {
   color: #171717;
 }
 
-.pp-compact-navigation .pp-navigation-control:hover {
-  transform: scale(1.06);
-}
+.pp-compact-navigation .pp-navigation-control[data-theme="dark"].is-active { color: #755a49; }
 
 .pp-navigation-control:active { transform: scale(.9); }
-.pp-navigation-control:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.pp-navigation-control:focus-visible { outline: none; }
 
-.pp-navigation-phone-icon {
+.pp-navigation-phone-icon,
+.pp-navigation-up-icon {
   display: block;
   width: 25px;
   height: 25px;
@@ -94,6 +99,92 @@
 .pp-navigation-phone-icon {
   transform-origin: 50% 66%;
   will-change: transform;
+  animation: pp-quick-phone-ring 5s ease-in-out infinite;
+}
+
+.pp-navigation-up-icon { width: 23px; height: 23px; stroke-width: 3; }
+
+.pp-navigation-camera-icon {
+  display: block;
+  flex: 0 0 21px;
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pp-navigation-tooltip {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 12px);
+  padding: 7px 11px;
+  border-radius: 3px;
+  background: #0a0a0a;
+  color: #fff;
+  font: 14px/1.2 TildaSans, Arial, sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(4px, -50%);
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pp-navigation-control:not(.is-active):hover .pp-navigation-tooltip,
+  .pp-navigation-control:focus-visible .pp-navigation-tooltip { opacity: 1; transform: translate(0, -50%); }
+}
+
+.pp-compact-navigation.is-menu-open :is(.pp-compact-navigation__contact, .pp-compact-navigation__top) {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.pp-quick-contacts {
+  --icon-cutout: #0a0a0a;
+  position: absolute;
+  top: calc(var(--pp-menu-control-size) + 10px);
+  right: calc(var(--pp-menu-control-size) + 12px);
+  box-sizing: border-box;
+  width: min(300px, calc(100vw - 76px));
+  max-height: calc(100dvh - var(--pp-menu-control-top) - var(--pp-menu-control-size) - 36px);
+  padding: 22px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid rgba(212, 197, 185, .3);
+  border-radius: 8px;
+  background: #0a0a0a;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, .2);
+  color: #fff;
+  font-family: TildaSans, Arial, sans-serif;
+  animation: pp-quick-contacts-in .2s ease both;
+}
+
+.pp-quick-contacts h2 { margin: 0 0 12px; color: #d4c5b9; font-size: 15px; font-weight: 500; }
+.pp-quick-contacts__links { display: grid; gap: 2px; }
+.pp-quick-contacts a { display: flex; align-items: center; gap: 13px; min-height: 44px; color: inherit; font-size: 16px; line-height: 1.3; text-decoration: none; }
+.pp-quick-contacts__links a { border-radius: 3px; transition: color .2s ease; }
+.pp-quick-contacts a:is(:hover, :focus-visible) { color: #d4c5b9; }
+.pp-quick-contacts a:focus-visible { outline: 1px solid #a38773; outline-offset: 3px; }
+.pp-quick-contacts .contact-icon { flex: 0 0 21px; width: 21px; height: 21px; color: #a38773; }
+.pp-quick-contacts .contact-icon--max_messenger path { fill: currentColor; }
+.pp-quick-contacts .pp-quick-contacts__book { min-height: 48px; margin-top: 12px; padding-top: 9px; border-top: 1px solid rgba(212, 197, 185, .25); color: #d4c5b9; font-weight: 700; }
+.pp-quick-contacts__status { margin: 12px 0 0; color: #d4c5b9; font-size: 12px; line-height: 1.4; }
+.pp-quick-contacts__status:empty { display: none; }
+
+@keyframes pp-quick-contacts-in {
+  from { opacity: 0; transform: translateX(5px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pp-quick-phone-ring {
+  0%, 22%, 100% { transform: rotate(0); }
+  3%, 9% { transform: rotate(-12deg); }
+  6%, 12% { transform: rotate(11deg); }
+  15% { transform: rotate(-6deg); }
+  18% { transform: rotate(3deg); }
 }
 
 .pp-compact-navigation__hover-ring {
@@ -115,21 +206,21 @@
   transition: opacity .14s ease, stroke-dashoffset .48s cubic-bezier(.2, .75, .2, 1);
 }
 
-.pp-compact-navigation__toggle:is(:hover, :focus-visible) .pp-compact-navigation__hover-ring {
+.pp-navigation-control:is(:focus-visible, :active, [data-pressed="true"]) .pp-compact-navigation__hover-ring {
   stroke-dashoffset: 0;
   opacity: 1;
 }
 
-.pp-compact-navigation.is-menu-open .pp-compact-navigation__toggle { color: #fff !important; }
-.pp-compact-navigation.is-menu-open .pp-compact-navigation__hover-ring {
-  stroke-dashoffset: 1 !important;
-  opacity: 0 !important;
-}
+:root .pp-compact-navigation.is-menu-open .pp-compact-navigation__toggle { border-color: transparent; background: transparent; box-shadow: none; color: #fff !important; }
 
 .pp-compact-navigation__toggle .pp-menu-toggle-icon { z-index: 1; }
 .pp-compact-navigation__toggle .pp-compact-navigation__hover-ring { z-index: 1; }
 
 @media (hover: hover) and (pointer: fine) {
+  .pp-navigation-control:hover .pp-compact-navigation__hover-ring {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
   .pp-compact-navigation__contact:is(:hover, :focus-visible) .pp-navigation-phone-icon,
   .pp-mobile-navigation__contact:is(:hover, :focus-visible) .pp-navigation-phone-icon {
     animation: pp-header-phone-ring 1180ms cubic-bezier(.2, .75, .2, 1) infinite;
@@ -141,11 +232,15 @@
     animation: pp-header-phone-ring 1180ms cubic-bezier(.2, .75, .2, 1) 1;
   }
 
-  .pp-compact-navigation__toggle:active .pp-compact-navigation__hover-ring {
+  .pp-navigation-control:active .pp-compact-navigation__hover-ring {
     stroke-dashoffset: 0;
     opacity: 1;
   }
 
+}
+
+@media (max-width: 639px) {
+  .pp-compact-navigation__top { display: none; }
 }
 
 .pp-menu-toggle-icon {
@@ -187,7 +282,7 @@
   }
   .pp-compact-navigation__toggle .pp-menu-toggle-icon { width: 21px; }
   .pp-compact-navigation__toggle .pp-menu-toggle-icon > i { width: 21px; }
-  .pp-compact-navigation__toggle .pp-compact-navigation__hover-ring {
+  .pp-navigation-control .pp-compact-navigation__hover-ring {
     inset: 4px;
     width: calc(100% - 8px);
     height: calc(100% - 8px);
@@ -199,6 +294,7 @@
   .pp-compact-navigation,
   .pp-navigation-control,
   .pp-compact-navigation__hover-ring,
+  .pp-navigation-tooltip,
   .pp-menu-toggle-icon > i { transition-duration: .01ms !important; }
-  .pp-navigation-phone-icon { animation: none !important; }
+  .pp-navigation-phone-icon, .pp-quick-contacts { animation: none !important; }
 }

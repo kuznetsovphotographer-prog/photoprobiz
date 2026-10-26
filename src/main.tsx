@@ -70,6 +70,24 @@ async function showPopup(hash:string){
   renderDialogs();
 }
 
+// Touch browsers do not consistently expose :active while a finger is held.
+// Share one press tracker across the floating controls and the menu toolbar.
+let pressedNavigationControl: HTMLElement | undefined;
+const clearNavigationPress = () => {
+  pressedNavigationControl?.removeAttribute('data-pressed');
+  pressedNavigationControl = undefined;
+};
+document.addEventListener('pointerdown', (event) => {
+  clearNavigationPress();
+  const control = event.target instanceof Element ? event.target.closest<HTMLElement>('.pp-navigation-control') : null;
+  if (!control) return;
+  pressedNavigationControl = control;
+  control.dataset.pressed = 'true';
+}, { passive: true });
+window.addEventListener('pointerup', clearNavigationPress, { capture: true, passive: true });
+window.addEventListener('pointercancel', clearNavigationPress, { capture: true, passive: true });
+window.addEventListener('blur', clearNavigationPress);
+
 document.addEventListener('click',(event)=>{
  if(event.defaultPrevented)return;
  const target=event.target as Element;

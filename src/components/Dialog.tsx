@@ -181,6 +181,14 @@ export function Dialog({ children, onClose, variant = 'content', label }: Dialog
           </button>
         </header>
         <div className="pp-legal-dialog__content">{children}</div>
+      </div> : variant === 'form' ? <div className="pp-dialog__panel">
+        <header className="pp-form-dialog__toolbar">
+          <h2>Заказать съёмку</h2>
+          <button ref={closeRef} className="pp-dialog__close" type="button" onClick={onClose} aria-label="Закрыть окно">
+            <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="m3 3 18 18M21 3 3 21" /></svg>
+          </button>
+        </header>
+        <div className="pp-form-dialog__content">{children}</div>
       </div> : <>
         <button ref={closeRef} className="pp-dialog__close" type="button" onClick={onClose} aria-label="Закрыть окно">
           <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="m3 3 18 18M21 3 3 21" /></svg>
