@@ -551,14 +551,18 @@ body:has(.pp-dialog:not(.pp-dialog--menu)) .pp-compact-navigation {
   .pp-dialog--gallery .pp-dialog__close { top: 6px; right: 4px; width: 44px; height: 44px; }
   .pp-dialog--gallery .pp-dialog__close svg { width: 24px; height: 24px; stroke-width: 1.75; }
   .pp-gallery { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 90px); gap: 7px; }
+  .pp-gallery { transition-duration: .5s; }
   .pp-gallery.is-thumbnails-hidden { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 0px); row-gap: 0; }
   .pp-gallery__image { max-width: 100%; max-height: calc(100vh - 111px); max-height: calc(100dvh - 111px); }
+  .pp-gallery__image { transition-duration: .26s, .5s, .5s; }
   .pp-gallery.is-thumbnails-hidden .pp-gallery__image { max-height: calc(100vh - 14px); max-height: calc(100dvh - 14px); }
   .pp-gallery__count { top: 8px; left: 8px; font-size: 11px; }
-  .pp-gallery__arrow { width: 44px; height: 54px; opacity: .78; }
+  .pp-gallery__arrow { width: 44px; height: 54px; opacity: .78; visibility: visible; transition: opacity .28s ease, visibility 0s, color .2s ease, background .2s ease, transform .18s ease; }
   .pp-gallery__arrow svg { width: 12px; height: 22px; }
+  .pp-gallery.is-fullscreen .pp-gallery__arrow { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .28s ease, visibility 0s .28s; }
   .pp-gallery__sidebar { grid-row: 2; padding: 0; box-shadow: 0 -1px 0 rgba(255, 255, 255, .09); }
-  .pp-gallery.is-thumbnails-hidden .pp-gallery__sidebar { transform: translateY(8px); }
+  .pp-gallery__sidebar { transition-duration: .3s, .5s, 0s; }
+  .pp-gallery.is-thumbnails-hidden .pp-gallery__sidebar { transform: translateY(8px); transition: opacity .3s ease, transform .5s ease, visibility 0s .5s; }
   .pp-gallery__thumbnails { grid-template-columns: none; grid-template-rows: 1fr; grid-auto-flow: column; grid-auto-columns: 68px; grid-auto-rows: auto; height: 90px; padding: 4px 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
   .pp-gallery__thumbnails::-webkit-scrollbar { display: none; }
   .pp-gallery__toolbar { top: -1px; right: 44px; display: flex; width: auto; gap: 2px; }

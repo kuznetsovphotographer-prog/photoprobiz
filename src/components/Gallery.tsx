@@ -66,6 +66,7 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
     lastTime: number;
     velocityX: number;
     horizontal: boolean;
+    onPhoto: boolean;
   } | null>(null);
   const settlingDirectionRef = useRef<-1 | 0 | 1 | null>(null);
   const suppressStageClick = useRef(false);
@@ -100,14 +101,15 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
     setIsFullscreen(active);
     if (matchMedia('(max-width: 720px)').matches) setThumbnailsVisible(!active);
   }, []);
-  const toggleFullscreen = useCallback(async () => {
+  const toggleFullscreen = useCallback(async (preferNative = true) => {
     if (fullscreenPending.current) return;
     fullscreenPending.current = true;
     fullscreenImageBefore.current = galleryRef.current?.querySelector<HTMLImageElement>('.pp-gallery__slide[aria-hidden="false"] img')?.getBoundingClientRect() || null;
     const fullscreenTarget = galleryRef.current?.closest<HTMLElement>('[role="dialog"]') || galleryRef.current;
     try {
       if (document.fullscreenElement) await document.exitFullscreen();
-      else if (fullscreenTarget?.requestFullscreen) await fullscreenTarget.requestFullscreen({ navigationUI: 'hide' });
+      else if (isFullscreen) setFullscreenMode(false);
+      else if (preferNative && fullscreenTarget?.requestFullscreen) await fullscreenTarget.requestFullscreen({ navigationUI: 'hide' });
       else setFullscreenMode(!isFullscreen);
     } catch {
       // Browser automation and embedded webviews can block the native API. The viewer still expands within its modal.
@@ -145,6 +147,9 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
     previousFullscreen.current = isFullscreen;
     const before = fullscreenImageBefore.current;
     fullscreenImageBefore.current = null;
+    // The mobile grid and image constraints share a CSS transition. A second
+    // FLIP transform would fight that moving layout and make the photo jump.
+    if (matchMedia('(max-width: 720px)').matches) return;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const photo = galleryRef.current?.querySelector<HTMLImageElement>('.pp-gallery__slide[aria-hidden="false"] img');
     if (!photo) return;
@@ -210,6 +215,11 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
 
   const beginSwipe = (event: PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === 'mouse' || settlingDirectionRef.current !== null || (event.target instanceof Element && event.target.closest('button'))) return;
+    if (!event.isPrimary) {
+      pointerStart.current = null;
+      suppressStageClick.current = true;
+      return;
+    }
     const now = performance.now();
     selectionRequest.current += 1;
     setOutgoingImage(null);
@@ -221,6 +231,7 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
       lastTime: now,
       velocityX: 0,
       horizontal: false,
+      onPhoto: event.target instanceof Element && Boolean(event.target.closest('.pp-gallery__image')),
     };
     suppressStageClick.current = false;
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -234,6 +245,7 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
       if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
       if (Math.abs(dy) >= Math.abs(dx)) {
         pointerStart.current = null;
+        suppressStageClick.current = true;
         return;
       }
       start.horizontal = true;
@@ -256,6 +268,13 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
     const dx = event.clientX - start.x;
     const dy = event.clientY - start.y;
     if (!start.horizontal || total <= 1) {
+      const tappedPhoto = start.onPhoto && Math.hypot(dx, dy) < 7;
+      if (tappedPhoto && matchMedia('(max-width: 720px)').matches) {
+        // Touch browsers may omit click after a swipe. Use the trusted release
+        // event and consume any subsequent compatibility click only once.
+        suppressStageClick.current = true;
+        void toggleFullscreen(false);
+      } else if (!tappedPhoto) suppressStageClick.current = true;
       setDragOffset(0);
       return;
     }
@@ -268,6 +287,7 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
     setSettlingDirection(direction);
   };
   const cancelSwipe = () => {
+    suppressStageClick.current = true;
     const wasHorizontal = pointerStart.current?.horizontal;
     pointerStart.current = null;
     if (!wasHorizontal) {
@@ -303,9 +323,16 @@ export function Gallery({ gallery, basePath = '/' }: GalleryProps) {
         onPointerUp={endSwipe}
         onPointerCancel={cancelSwipe}
         onClick={(event) => {
-          if (!suppressStageClick.current) return;
-          suppressStageClick.current = false;
-          event.stopPropagation();
+          if (suppressStageClick.current) {
+            suppressStageClick.current = false;
+            event.stopPropagation();
+            return;
+          }
+          const tappedPhoto = event.target instanceof Element && Boolean(event.target.closest('.pp-gallery__image'));
+          if (tappedPhoto && matchMedia('(max-width: 720px)').matches && settlingDirectionRef.current === null) {
+            event.stopPropagation();
+            void toggleFullscreen(false);
+          }
         }}
       >
         <p className="pp-gallery__count" aria-hidden="true">{selected + 1} / {total}</p>
