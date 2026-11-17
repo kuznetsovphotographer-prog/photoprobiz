@@ -14,7 +14,7 @@ const methods = { phone: 'Телефон', telegram: 'Telegram', whatsapp: 'What
 const sources = { modal: 'Всплывающая форма', inline: 'Форма на странице' };
 const DEVICE_TYPES = new Set(['computer', 'phone', 'tablet', 'unknown']);
 const OS_FAMILIES = new Set(['windows', 'macos', 'android', 'ios', 'ipados', 'harmonyos', 'linux', 'chromeos', 'unknown']);
-const DEVICE_PROFILE_REQUIRED_CONSENT_VERSIONS = new Set(['2026-09-12-2', '2026-09-12-3']);
+const DEVICE_PROFILE_REQUIRED_CONSENT_VERSIONS = new Set(['2026-09-12-2', '2026-09-12-3', '2026-11-17']);
 const DEFAULT_SITE = {
   siteHost: 'photoprobiz.ru',
   label: 'Деловой фотограф',
@@ -24,7 +24,7 @@ const DEFAULT_SITE = {
     'http://127.0.0.1:4173', 'http://127.0.0.1:5173',
     'http://localhost:4173', 'http://localhost:5173',
   ],
-  consentVersions: ['2026-09-11', '2026-09-12', '2026-09-12-2', '2026-09-12-3'],
+  consentVersions: ['2026-09-11', '2026-09-12', '2026-09-12-2', '2026-09-12-3', '2026-11-17'],
   packages: ['Минимальный', 'Базовый', 'Полный'],
   formIds: ['homepage-inline', 'modal-general', 'modal-package-minimal', 'modal-package-base', 'modal-package-full'],
 };

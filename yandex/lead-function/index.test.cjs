@@ -26,22 +26,24 @@ test('consent rollout preserves the accepted document version and rejects unknow
     fetchImpl: success,
     leadStore: { databaseConfigured: () => true, save: async (value) => recordedVersions.push(value.consentVersion) },
   });
-  for (const consentVersion of ['2026-09-11', '2026-09-12', '2026-09-12-2', '2026-09-12-3']) {
+  const supportedVersions = ['2026-09-11', '2026-09-12', '2026-09-12-2', '2026-09-12-3', '2026-11-17'];
+  for (const consentVersion of supportedVersions) {
     const result = await handle(event({ ...lead, consentVersion }), context);
     assert.equal(result.statusCode, 200);
   }
   const rejected = await handle(event({ ...lead, consentVersion: 'unknown-version' }), context);
   assert.equal(rejected.statusCode, 400);
-  assert.deepEqual(recordedVersions, ['2026-09-11', '2026-09-12', '2026-09-12-2', '2026-09-12-3']);
+  assert.deepEqual(recordedVersions, supportedVersions);
 });
 
 test('the current consent version requires supported coarse device information while old pages remain compatible', async () => {
   const stored = [];
   const handle = handler({ fetchImpl: success, leadStore: { databaseConfigured: () => true, save: async (value) => stored.push(value) } });
-  const current = { ...lead, consentVersion: '2026-09-12-3' };
+  const current = { ...lead, consentVersion: '2026-11-17' };
   assert.equal((await handle(event(current), context)).statusCode, 200);
   const { deviceType: _deviceType, osFamily: _osFamily, ...withoutProfile } = current;
   assert.equal((await handle(event(withoutProfile), context)).statusCode, 400);
+  assert.equal((await handle(event({ ...withoutProfile, consentVersion: '2026-09-12-3' }), context)).statusCode, 400);
   assert.equal((await handle(event({ ...current, deviceType: 'watch' }), context)).statusCode, 400);
   assert.equal((await handle(event({ ...current, osFamily: 'windows-11' }), context)).statusCode, 400);
   assert.equal((await handle(event({ ...withoutProfile, consentVersion: '2026-09-12' }), context)).statusCode, 200);

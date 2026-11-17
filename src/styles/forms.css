@@ -42,8 +42,8 @@
 .lead-consent input { appearance: none; flex: none; position: relative; width: 20px; height: 20px; border: 2px solid #000; border-radius: 0; background: transparent; margin: 0; cursor: pointer; }
 .lead-consent input:checked::after { content: ''; position: absolute; width: 5px; height: 10px; border: solid #000; border-width: 0 2px 2px 0; transform: rotate(45deg); left: 5px; top: 0; }
 .lead-consent input:focus-visible { outline: 2px solid #755a49; outline-offset: 3px; }
-.lead-form .lead-consent a { color: #ff8562; text-decoration: none; }
-.lead-consent a:hover { text-decoration: underline; }
+.lead-form :is(.lead-consent a, .lead-privacy-link) { color: #755a49; text-decoration: underline; }
+.lead-privacy-link { display: inline-block; margin: 6px 0 0 30px; font-size: 12px; line-height: 1.4; }
 .lead-submit { display: flex; justify-content: center; align-items: center; gap: 10px; width: 100%; min-height: 60px; padding: 12px 20px; color: #1c1917; background: transparent; border: 1px solid #1c1917; border-radius: 0; font-family: inherit; font-size: 16px; font-weight: 600; line-height: 1.2; cursor: pointer; transition: color .2s, background-color .2s, border-color .2s; }
 .lead-submit:hover:not(:disabled), .lead-submit:focus-visible { background: #1c1917; color: #fff; }
 .lead-submit:focus-visible { outline: 2px solid #755a49; outline-offset: 4px; }

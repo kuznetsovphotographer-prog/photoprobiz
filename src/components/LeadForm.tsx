@@ -247,8 +247,9 @@ export function LeadForm({ variant = 'modal', packageName, basePath = './', onSu
               setSubmitError('');
             }}
               required disabled={pending} aria-invalid={Boolean(errors.consent)} aria-describedby={errors.consent ? `${id}-consent-error` : undefined} />
-              <span>Я ознакомился(лась) с <a href="#popup:privacy">Политикой в отношении обработки персональных данных</a> и даю отдельное <a href="#popup:consent">Согласие на обработку персональных данных</a>.</span>
+              <span>Я даю <a href="#popup:consent">согласие на обработку персональных данных</a>.</span>
             </label>{fieldError('consent')}
+            <a className="lead-privacy-link" href="#popup:privacy">Политика в отношении обработки персональных данных</a>
           </div>
         </div>
 
