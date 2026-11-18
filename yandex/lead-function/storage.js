@@ -1,5 +1,8 @@
 'use strict';
 
+const { createHash } = require('node:crypto');
+const { attachPostboxStore, OUTBOX_TABLE, OUTBOX_COLUMNS } = require('./postbox-store.js');
+
 const LEADS_TABLE = 'leads';
 const CONSENT_TABLE = 'consent_events';
 const LEAD_META_TABLE = 'lead_meta';
@@ -16,6 +19,7 @@ const LEADS_COLUMNS = [
   ['phone', 'UTF8'],
   ['contact_method', 'UTF8'],
   ['package_name', 'UTF8'],
+  ['booking_details', 'UTF8'],
   ['phone_country', 'UTF8'],
   ['device_type', 'UTF8'],
   ['os_family', 'UTF8'],
@@ -57,41 +61,46 @@ DECLARE $name AS Utf8;
 DECLARE $phone AS Utf8;
 DECLARE $contact_method AS Utf8;
 DECLARE $package_name AS Utf8;
+DECLARE $booking_details AS Utf8;
 DECLARE $phone_country AS Utf8;
 DECLARE $device_type AS Utf8;
 DECLARE $os_family AS Utf8;
 DECLARE $lead_expires_at AS Timestamp;
 DECLARE $consent_expires_at AS Timestamp;
+DECLARE $fingerprint AS Utf8;
+DECLARE $notification_state AS Utf8;
 
-UPSERT INTO ${LEADS_TABLE} (
+INSERT INTO ${LEADS_TABLE} (
   submission_id, server_received_at, consent_accepted_at, consent_version,
   form_id, source, site_host, name, phone, contact_method, package_name,
-  phone_country, device_type, os_family, status, expires_at
+  phone_country, device_type, os_family, booking_details, status, expires_at
 ) VALUES (
   $submission_id, $server_received_at, $consent_accepted_at, $consent_version,
   $form_id, $source, $site_host, $name, $phone, $contact_method, $package_name,
-  $phone_country, $device_type, $os_family, "new", $lead_expires_at
+  $phone_country, $device_type, $os_family, $booking_details, "new", $lead_expires_at
 );
 
-UPSERT INTO ${CONSENT_TABLE} (
+INSERT INTO ${CONSENT_TABLE} (
   submission_id, server_received_at, consent_accepted_at, consent_version,
   form_id, source, site_host, name, phone, expires_at
 ) VALUES (
   $submission_id, $server_received_at, $consent_accepted_at, $consent_version,
   $form_id, $source, $site_host, $name, $phone, $consent_expires_at
-);`;
+);
+INSERT INTO ${OUTBOX_TABLE} (submission_id, site_host, fingerprint, state, server_received_at, expires_at, message_id)
+VALUES ($submission_id, $site_host, $fingerprint, $notification_state, $server_received_at, $lead_expires_at, "");`;
 
 const LEAD_SELECT_COLUMNS = `
   submission_id, server_received_at, consent_accepted_at, consent_version,
   form_id, source, site_host, name, phone, contact_method, package_name,
-  phone_country, device_type, os_family, status, expires_at`;
+  phone_country, device_type, os_family, booking_details, status, expires_at`;
 
 const LEAD_JOIN_SELECT_COLUMNS = `
   l.submission_id AS submission_id, l.server_received_at AS server_received_at,
   l.consent_accepted_at AS consent_accepted_at, l.consent_version AS consent_version,
   l.form_id AS form_id, l.source AS source, l.site_host AS site_host,
   l.name AS name, l.phone AS phone, l.contact_method AS contact_method,
-  l.package_name AS package_name, l.phone_country AS phone_country,
+  l.booking_details AS booking_details, l.package_name AS package_name, l.phone_country AS phone_country,
   l.device_type AS device_type, l.os_family AS os_family,
   l.status AS status, l.expires_at AS expires_at`;
 
@@ -117,6 +126,7 @@ WHERE submission_id IN $submission_ids;`;
 
 const DELETE_LEADS = `
 DECLARE $submission_ids AS List<Utf8>;
+DELETE FROM ${OUTBOX_TABLE} WHERE submission_id IN $submission_ids;
 DELETE FROM ${LEAD_META_TABLE} WHERE submission_id IN $submission_ids;
 DELETE FROM ${CONSENT_TABLE} WHERE submission_id IN $submission_ids;
 DELETE FROM ${LEADS_TABLE} WHERE submission_id IN $submission_ids;`;
@@ -176,12 +186,26 @@ function storageRecord(lead, serverReceivedAt, siteHost = 'photoprobiz.ru') {
     phone: lead.contact,
     contactMethod: lead.contactMethod,
     packageName: lead.packageName || '',
+    bookingDetails: lead.bookingDetails || '',
     phoneCountry: lead.phoneCountry || '',
     deviceType: lead.deviceType || 'unknown',
     osFamily: lead.osFamily || 'unknown',
     leadExpiresAt: addUtcYears(receivedAt, 1),
     consentExpiresAt: addUtcYears(receivedAt, 3),
   };
+}
+
+function submissionIdentity(record) {
+  return [record.submissionId, record.siteHost, record.name, record.phone, record.contactMethod,
+    record.packageName || '', record.bookingDetails || '', record.phoneCountry || '', record.deviceType || 'unknown',
+    record.osFamily || 'unknown', record.consentVersion, new Date(record.consentAcceptedAt).toISOString(), record.formId, record.source];
+}
+function storedIdentity(row) {
+  return submissionIdentity({ submissionId: row.submission_id, siteHost: row.site_host,
+    name: row.name, phone: row.phone, contactMethod: row.contact_method, packageName: row.package_name,
+    bookingDetails: row.booking_details, phoneCountry: row.phone_country, deviceType: row.device_type,
+    osFamily: row.os_family, consentVersion: row.consent_version, consentAcceptedAt: row.consent_accepted_at,
+    formId: row.form_id, source: row.source });
 }
 
 function stageError(error, stage) {
@@ -287,10 +311,12 @@ function createYdbStore({ env = process.env, sdk } = {}) {
       schemaPromise = activeDriver.tableClient.withSessionRetry(async (session) => {
         const leadsDescription = await ensureTable(session, ydb, LEADS_TABLE, LEADS_COLUMNS);
         await ensureColumns(session, ydb, LEADS_TABLE, [
+          ['booking_details', 'UTF8'],
           ['device_type', 'UTF8'],
           ['os_family', 'UTF8'],
         ], leadsDescription);
         await ensureTable(session, ydb, CONSENT_TABLE, CONSENT_COLUMNS);
+        await ensureTable(session, ydb, OUTBOX_TABLE, OUTBOX_COLUMNS);
         const metaDescription = await ensureTable(session, ydb, LEAD_META_TABLE, LEAD_META_COLUMNS);
         await ensureColumns(session, ydb, LEAD_META_TABLE, [
           ['revenue_rub', 'UINT64'],
@@ -303,15 +329,33 @@ function createYdbStore({ env = process.env, sdk } = {}) {
     await schemaPromise;
   }
 
-  async function save(lead, serverReceivedAt, accessToken, siteHost = 'photoprobiz.ru') {
+  async function save(lead, serverReceivedAt, accessToken, siteHost = 'photoprobiz.ru', queuePostbox = false) {
     const ydb = sdk || require('ydb-sdk');
     const activeDriver = await getDriver(accessToken);
     await ensureSchema(activeDriver);
     const record = storageRecord(lead, serverReceivedAt, siteHost);
+    const fingerprint = createHash('sha256').update(JSON.stringify(submissionIdentity(record))).digest('hex');
     try {
-      await activeDriver.tableClient.withSessionRetry(async (session) => {
+      return await transaction(accessToken, async (session, tx) => {
+        const prior = await session.executeQuery(`DECLARE $id AS Utf8;
+          SELECT * FROM leads WHERE submission_id = $id;`,
+          { $id: ydb.TypedValues.utf8(record.submissionId) }, tx);
+        const existing = nativeRows(ydb, prior)[0];
+        if (existing) {
+          // Old rows have no outbox. Compare their immutable input, never rewrite or enqueue them.
+          if (JSON.stringify(submissionIdentity(record)) !== JSON.stringify(storedIdentity(existing))) {
+            throw Object.assign(new Error('Submission ID conflict'), { code: 'SUBMISSION_CONFLICT' });
+          }
+          return { created: false, serverReceivedAt: existing.server_received_at };
+        }
+        const previousOutbox = await session.executeQuery(`DECLARE $id AS Utf8;
+          SELECT submission_id FROM notification_outbox WHERE submission_id = $id;`,
+          { $id: ydb.TypedValues.utf8(record.submissionId) }, tx);
+        if (nativeRows(ydb, previousOutbox).length) throw Object.assign(new Error('Submission ID conflict'), { code: 'SUBMISSION_CONFLICT' });
         const query = await session.prepareQuery(UPSERT_LEAD);
         await session.executeQuery(query, {
+        '$fingerprint': ydb.TypedValues.utf8(fingerprint),
+        '$notification_state': ydb.TypedValues.utf8(queuePostbox ? 'postbox-pending' : 'disabled'),
         '$submission_id': ydb.TypedValues.utf8(record.submissionId),
         '$server_received_at': ydb.TypedValues.timestamp(record.serverReceivedAt),
         '$consent_accepted_at': ydb.TypedValues.timestamp(record.consentAcceptedAt),
@@ -323,16 +367,35 @@ function createYdbStore({ env = process.env, sdk } = {}) {
         '$phone': ydb.TypedValues.utf8(record.phone),
         '$contact_method': ydb.TypedValues.utf8(record.contactMethod),
         '$package_name': ydb.TypedValues.utf8(record.packageName),
+        '$booking_details': ydb.TypedValues.utf8(record.bookingDetails),
         '$phone_country': ydb.TypedValues.utf8(record.phoneCountry),
         '$device_type': ydb.TypedValues.utf8(record.deviceType),
         '$os_family': ydb.TypedValues.utf8(record.osFamily),
         '$lead_expires_at': ydb.TypedValues.timestamp(record.leadExpiresAt),
         '$consent_expires_at': ydb.TypedValues.timestamp(record.consentExpiresAt),
-        });
-      }, 10000);
+        }, tx);
+        return { created: true, serverReceivedAt: record.serverReceivedAt };
+      });
     } catch (error) {
       throw stageError(error, 'write');
     }
+  }
+
+  async function transaction(accessToken, work) {
+    const active = await getDriver(accessToken);
+    await ensureSchema(active);
+    return active.tableClient.withSessionRetry(async session => {
+      const transaction = await session.beginTransaction({ serializableReadWrite: {} });
+      const tx = { txId: transaction.id };
+      try {
+        const result = await work(session, tx);
+        await session.commitTransaction(tx);
+        return result;
+      } catch (error) {
+        await session.rollbackTransaction(tx).catch(() => {});
+        throw error;
+      }
+    }, 10000);
   }
 
   function nativeRows(ydb, result) {
@@ -556,7 +619,8 @@ LIMIT 1;`);
     }
   }
 
-  return { databaseConfigured, deleteMany, existingIds, get, list, periods, save, saveManual, sites, updateMeta, updateStatus };
+  const postbox = attachPostboxStore({ transaction, getDriver, ensureSchema, nativeRows, sdk: sdk || (() => require('ydb-sdk')) });
+  return { ...postbox, databaseConfigured, deleteMany, existingIds, get, list, periods, save, saveManual, sites, updateMeta, updateStatus };
 }
 
 module.exports = {

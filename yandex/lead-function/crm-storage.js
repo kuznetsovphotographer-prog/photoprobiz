@@ -4,6 +4,8 @@ const { createYdbStore, ensureColumns, ensureTable, LEAD_META_COLUMNS, LEAD_META
 
 const INTERIORS_HOST = 'prointeriors.ru';
 const INTERIORS_LABEL = 'Интерьерная съёмка';
+const MEDICAL_HOST = 'promedphoto.ru';
+const MEDICAL_LABEL = 'Медицинская фотосъёмка';
 const DATABASE_PATTERN = /^\/ru-central1\/[a-z0-9]+\/[a-z0-9]+$/;
 const INTERIORS_SELECT = `
   l.submission_id AS submission_id, l.server_received_at AS server_received_at,
@@ -29,12 +31,14 @@ function estimateLabel(value) {
       const quantity = Number(item?.quantity);
       return label ? `${label}${Number.isInteger(quantity) && quantity > 1 ? ` × ${quantity}` : ''}` : '';
     }).filter(Boolean);
-    const totalLabel = Number.isFinite(total) && total >= 0 ? `≈ ${new Intl.NumberFormat('ru-RU').format(total)} ₽` : '';
+    if (total === 0 && parts.length === 0) return '';
+    const totalLabel = Number.isFinite(total) && total > 0 ? `≈ ${new Intl.NumberFormat('ru-RU').format(total)} ₽` : '';
     return [totalLabel, ...parts].filter(Boolean).join(' · ').slice(0, 500);
   } catch { return 'Предварительный расчёт'; }
 }
 
-function createInteriorsStore({ endpoint, database, sdk } = {}) {
+function createInteriorsStore({ endpoint, database, sdk, siteHost = INTERIORS_HOST } = {}) {
+  if (![INTERIORS_HOST, MEDICAL_HOST].includes(siteHost)) throw new Error('Unknown external source.');
   let driver;
   let readyPromise;
   let schemaPromise;
@@ -75,7 +79,9 @@ function createInteriorsStore({ endpoint, database, sdk } = {}) {
     const set = result?.resultSets?.[0];
     if (!set) return [];
     return ydb.TypedData.createNativeObjects(set).map((row) => ({ ...row,
-      package_name: estimateLabel(row.estimate_json), notes: String(row.notes || ''),
+      package_name: estimateLabel(row.estimate_json),
+      source: siteHost === MEDICAL_HOST ? (row.form_id === 'homepage-inline' ? 'inline' : 'modal') : row.source,
+      contact_method: siteHost === MEDICAL_HOST && row.contact_method === 'max' ? 'max_messenger' : row.contact_method, notes: String(row.notes || ''),
       manual_source: String(row.manual_source || ''), revenue_rub: Number(row.revenue_rub || 0) }));
   }
 
@@ -100,7 +106,7 @@ SELECT ${INTERIORS_SELECT}, COALESCE(m.notes, "") AS notes, COALESCE(m.manual_so
 COALESCE(m.revenue_rub, CAST(0 AS Uint64)) AS revenue_rub
 FROM leads AS l INNER JOIN consent_events AS c ON l.submission_id = c.submission_id
 LEFT JOIN lead_meta AS m ON l.submission_id = m.submission_id
-WHERE l.site_host = "${INTERIORS_HOST}"
+WHERE l.site_host = "${siteHost}"
 AND (NOT $has_period OR (l.server_received_at >= $period_from AND l.server_received_at < $period_to))
 AND (NOT $has_cursor OR l.server_received_at < $before_at
   OR (l.server_received_at = $before_at AND l.submission_id < $before_id))
@@ -126,7 +132,7 @@ SELECT ${INTERIORS_SELECT}, COALESCE(m.notes, "") AS notes, COALESCE(m.manual_so
 COALESCE(m.revenue_rub, CAST(0 AS Uint64)) AS revenue_rub
 FROM leads AS l INNER JOIN consent_events AS c ON l.submission_id = c.submission_id
 LEFT JOIN lead_meta AS m ON l.submission_id = m.submission_id
-WHERE l.submission_id = $submission_id AND l.site_host = "${INTERIORS_HOST}" LIMIT 1;`);
+WHERE l.submission_id = $submission_id AND l.site_host = "${siteHost}" LIMIT 1;`);
       return session.executeQuery(query, { '$submission_id': ydb.TypedValues.utf8(submissionId) });
     });
     return result ? nativeRows(ydb, result)[0] || null : null;
@@ -163,7 +169,7 @@ VALUES ($id, $notes, $source, $revenue, $updated, $expires);`);
     const ydb = sdk || require('ydb-sdk');
     const result = await run(accessToken, async (session) => {
       const query = await session.prepareQuery(`SELECT server_received_at FROM leads
-WHERE site_host = "${INTERIORS_HOST}" ORDER BY server_received_at DESC;`);
+WHERE site_host = "${siteHost}" ORDER BY server_received_at DESC;`);
       return session.executeQuery(query);
     });
     return result ? nativeRows(ydb, result).map((row) => row.server_received_at) : [];
@@ -190,64 +196,61 @@ WHERE site_host = "${INTERIORS_HOST}" ORDER BY server_received_at DESC;`);
   return { configured, deleteMany, existingIds, get, list, periods, updateMeta, updateStatus };
 }
 
-function createCrmStore({ env = process.env, sdk, primaryStore, interiorsStore } = {}) {
+function createCrmStore({ env = process.env, sdk, primaryStore, interiorsStore, medicalStore } = {}) {
   const primary = primaryStore || createYdbStore({ env, sdk });
-  const interiors = interiorsStore || createInteriorsStore({ endpoint: env.ENDPOINT, database: env.PROINTERIORS_DATABASE, sdk });
-  const enabled = () => interiors.configured();
+  const externals = [
+    { host: INTERIORS_HOST, label: INTERIORS_LABEL, store: interiorsStore || createInteriorsStore({ endpoint: env.ENDPOINT, database: env.PROINTERIORS_DATABASE, sdk }) },
+    { host: MEDICAL_HOST, label: MEDICAL_LABEL, store: medicalStore || createInteriorsStore({ endpoint: env.ENDPOINT, database: env.PROMEDPHOTO_DATABASE, sdk, siteHost: MEDICAL_HOST }) },
+  ];
+  const active = () => externals.filter(({ store }) => store.configured());
   const owner = async (id, token) => {
-    const [first, second] = await Promise.all([primary.get(id, token), enabled() ? interiors.get(id, token) : null]);
-    if (first && second) throw stageError(Object.assign(new Error('Ambiguous lead ID.'), { code: 'AMBIGUOUS_LEAD_ID' }), 'read');
-    return first ? { store: primary, row: first } : second ? { store: interiors, row: second } : null;
+    const stores = [primary, ...active().map(({ store }) => store)];
+    const rows = await Promise.all(stores.map(store => store.get(id, token)));
+    const matches = rows.flatMap((row, i) => row ? [{ store: stores[i], row }] : []);
+    if (matches.length > 1) throw stageError(Object.assign(new Error('Ambiguous lead ID.'), { code: 'AMBIGUOUS_LEAD_ID' }), 'read');
+    return matches[0] || null;
   };
   return {
-    databaseConfigured: () => primary.databaseConfigured(), databaseCount: () => enabled() ? 2 : 1,
-    siteLabels: () => enabled() ? { [INTERIORS_HOST]: INTERIORS_LABEL } : {},
+    databaseConfigured: () => primary.databaseConfigured(), databaseCount: () => 1 + active().length,
+    siteLabels: () => Object.fromEntries(active().map(({ host, label }) => [host, label])),
     save: (...args) => primary.save(...args), saveManual: (...args) => primary.saveManual(...args),
-    async sites(token) { const hosts = await primary.sites(token); return enabled() ? [...new Set([...hosts, INTERIORS_HOST])] : hosts; },
+    async sites(token) { return [...new Set([...await primary.sites(token), ...active().map(({ host }) => host)])]; },
     async periods(token, options = {}) {
-      if (options.siteHost === INTERIORS_HOST) return enabled() ? interiors.periods(token) : [];
+      const external = externals.find(({ host }) => host === options.siteHost);
+      if (external) return external.store.configured() ? external.store.periods(token) : [];
       if (options.siteHost) return primary.periods(token, options);
-      const values = await Promise.all([primary.periods(token, options), ...(enabled() ? [interiors.periods(token)] : [])]);
-      return values.flat();
+      return (await Promise.all([primary.periods(token, options), ...active().map(({ store }) => store.periods(token))])).flat();
     },
     async list(token, options = {}) {
-      if (options.siteHost === INTERIORS_HOST) return enabled() ? interiors.list(token, options) : { rows: [], hasMore: false };
+      const external = externals.find(({ host }) => host === options.siteHost);
+      if (external) return external.store.configured() ? external.store.list(token, options) : { rows: [], hasMore: false };
       if (options.siteHost) return primary.list(token, options);
-      const results = await Promise.all([primary.list(token, options), ...(enabled() ? [interiors.list(token, options)] : [])]);
+      const results = await Promise.all([primary.list(token, options), ...active().map(({ store }) => store.list(token, options))]);
       const limit = Math.max(1, Math.min(Number(options.limit) || 50, 100));
-      const combined = results.flatMap((result) => result.rows).sort((a, b) => {
+      const combined = results.flatMap(result => result.rows).sort((a, b) => {
         const time = new Date(b.server_received_at).getTime() - new Date(a.server_received_at).getTime();
         return time || String(b.submission_id).localeCompare(String(a.submission_id));
       });
-      return { rows: combined.slice(0, limit), hasMore: combined.length > limit || results.some((result) => result.hasMore) };
+      return { rows: combined.slice(0, limit), hasMore: combined.length > limit || results.some(result => result.hasMore) };
     },
     async get(id, token) { return (await owner(id, token))?.row || null; },
     async updateStatus(id, status, token) { const target = await owner(id, token); if (!target) return false; await target.store.updateStatus(id, status, token); return true; },
     async updateMeta(id, notes, source, revenueRub, token) { const target = await owner(id, token); return target ? target.store.updateMeta(id, notes, source, revenueRub, token) : false; },
     async deleteMany(ids, token) {
-      const [primaryIds, interiorIds] = await Promise.all([
-        primary.existingIds(ids, token),
-        enabled() ? interiors.existingIds(ids, token) : [],
-      ]);
-      const primarySet = new Set(primaryIds);
-      const interiorSet = new Set(interiorIds);
-      const collision = ids.find((id) => primarySet.has(id) && interiorSet.has(id));
-      if (collision) {
+      const stores = [primary, ...active().map(({ store }) => store)];
+      const found = await Promise.all(stores.map(store => store.existingIds(ids, token)));
+      const sets = found.map(values => new Set(values));
+      if (ids.some(id => sets.filter(set => set.has(id)).length > 1)) {
         throw stageError(Object.assign(new Error('Ambiguous lead ID.'), { code: 'AMBIGUOUS_LEAD_ID' }), 'read');
       }
-      const groups = [
-        { ids: ids.filter((id) => primarySet.has(id)), store: primary },
-        { ids: ids.filter((id) => interiorSet.has(id)), store: interiors },
-      ].filter((group) => group.ids.length);
-      const results = await Promise.allSettled(groups.map((group) => group.store.deleteMany(group.ids, token)));
-      const deleted = new Set(ids.filter((id) => !primarySet.has(id) && !interiorSet.has(id)));
+      const groups = stores.map((store, i) => ({ store, ids: ids.filter(id => sets[i].has(id)) })).filter(group => group.ids.length);
+      const results = await Promise.allSettled(groups.map(group => group.store.deleteMany(group.ids, token)));
+      const deleted = new Set(ids.filter(id => !sets.some(set => set.has(id))));
       const failed = new Set();
-      results.forEach((result, index) => {
-        groups[index].ids.forEach((id) => (result.status === 'fulfilled' ? deleted : failed).add(id));
-      });
-      return { deletedIds: ids.filter((id) => deleted.has(id)), failedIds: ids.filter((id) => failed.has(id)) };
+      results.forEach((result, i) => groups[i].ids.forEach(id => (result.status === 'fulfilled' ? deleted : failed).add(id)));
+      return { deletedIds: ids.filter(id => deleted.has(id)), failedIds: ids.filter(id => failed.has(id)) };
     },
   };
 }
 
-module.exports = { INTERIORS_DELETE_LEADS, INTERIORS_HOST, INTERIORS_LABEL, INTERIORS_SELECT, INTERIORS_SELECT_EXISTING_IDS, createCrmStore, createInteriorsStore, estimateLabel };
+module.exports = { MEDICAL_HOST, MEDICAL_LABEL, INTERIORS_DELETE_LEADS, INTERIORS_HOST, INTERIORS_LABEL, INTERIORS_SELECT, INTERIORS_SELECT_EXISTING_IDS, createCrmStore, createInteriorsStore, estimateLabel };

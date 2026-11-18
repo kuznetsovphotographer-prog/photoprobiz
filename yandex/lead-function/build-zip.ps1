@@ -6,8 +6,10 @@ try {
   $projectRoot = (Resolve-Path -LiteralPath '../..').Path
   $outputDir = Join-Path $projectRoot 'output'
   New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
-  $zipPath = Join-Path $outputDir 'photoprobiz-crm-delete-periods.zip'
-  $files = @('index.js', 'storage.js', 'crm-storage.js', 'admin-auth.js', 'admin-page.js', 'package.json', 'package-lock.json')
+  $releaseDir = Join-Path $outputDir 'postbox-2026-11-18'
+  New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
+  $zipPath = Join-Path $releaseDir 'photoprobiz-aleksreport-postbox.zip'
+  $files = @('index.js', 'storage.js', 'postbox-store.js', 'postbox.js', 'crm-storage.js', 'admin-auth.js', 'admin-page.js', 'package.json', 'package-lock.json')
   Compress-Archive -LiteralPath $files -DestinationPath $zipPath -Force
   Add-Type -AssemblyName System.IO.Compression.FileSystem
   $archive = [IO.Compression.ZipFile]::OpenRead($zipPath)

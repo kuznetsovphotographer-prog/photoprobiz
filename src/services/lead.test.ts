@@ -5,7 +5,7 @@ import { classifyDevice } from './deviceProfile';
 
 const validLead: LeadInput = {
   name: 'Тест', contact: '+79991234567', contactMethod: 'phone', consent: true, source: 'modal',
-  consentAcceptedAt: '2026-11-17T10:00:00.000Z', consentVersion: '2026-11-17',
+  consentAcceptedAt: '2026-11-18T10:00:00.000Z', consentVersion: '2026-11-18',
   submissionId: '019a1234-5678-7000-8000-123456789abc', formId: 'modal-general',
   deviceType: 'computer', osFamily: 'windows',
 };
@@ -117,5 +117,13 @@ test('HTTP delivery preserves the complete consent evidence', async () => {
       return new Response(JSON.stringify({ ok: true }));
     };
     await createHttpLeadAdapter('https://example.test/lead')(validLead);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('a persisted request with pending mail is successful on HTTP 202', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => new Response(JSON.stringify({ ok: true, stored: true, notification: 'pending' }), { status: 202 });
+    assert.deepEqual(await createHttpLeadAdapter('https://example.test/lead')(validLead), { status: 'success', mode: 'remote' });
   } finally { globalThis.fetch = originalFetch; }
 });

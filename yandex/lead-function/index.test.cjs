@@ -66,7 +66,8 @@ test('health works without connecting and exposes only configuration state', asy
   assert.equal(body.storage, 'ydb');
   assert.equal(body.databaseConfigured, true);
   assert.equal(body.crmDatabasesConfigured, 1);
-  assert.equal(body.telegramConfigured, true);
+  assert.equal(body.deliveryMode, 'storage-only');
+  assert.equal(body.telegramConfigured, undefined);
   assert.ok(!result.body.includes('test-token'));
 });
 
@@ -357,26 +358,17 @@ test('untrusted and missing origins cannot submit or write', async () => {
   }
 });
 
-test('all forms and contact choices are stored before an anonymous Telegram notification', async () => {
-  for (const source of ['inline', 'modal']) for (const contactMethod of ['phone', 'telegram', 'whatsapp', 'max_messenger']) for (const packageName of [undefined, 'Минимальный', 'Базовый', 'Полный']) {
-    const order = [];
-    const leadStore = { databaseConfigured: () => true, save: async (stored, _receivedAt, accessToken) => {
-      order.push('store');
-      assert.equal(stored.contact, lead.contact);
-      assert.equal(accessToken, context.token.access_token);
-    } };
-    const instance = createHandler({ env, leadStore, fetchImpl: async (url, options) => {
-      order.push('notify');
-      assert.equal(url, 'https://api.telegram.org/bottest-token/sendMessage');
-      const body = JSON.parse(options.body);
-      assert.equal(body.chat_id, env.TELEGRAM_CHAT_ID);
-      assert.ok(body.text.includes(lead.submissionId));
-      assert.ok(!body.text.includes(lead.name));
-      assert.ok(!body.text.includes(lead.contact));
-      return success();
-    } });
-    assert.equal((await instance(event({ ...lead, source, contactMethod, packageName }), context)).statusCode, 200);
-    assert.deepEqual(order, ['store', 'notify']);
+test('all forms and contact choices are accepted without a delivery network request', async () => {
+  for (const source of ['inline','modal']) for (const contactMethod of ['phone','telegram','whatsapp','max_messenger']) for (const packageName of [undefined,'Минимальный','Базовый','Полный']) {
+    let writes=0;
+    const leadStore={databaseConfigured:()=>true,save:async(value,_time,token,host,queue)=>{
+      writes++;assert.equal(value.contact,lead.contact);assert.equal(token,context.token.access_token);
+      assert.equal(host,'photoprobiz.ru');assert.equal(queue,true);return {created:true};
+    }};
+    const instance=createHandler({env:{...env,DELIVERY_MODE:'postbox'},leadStore,
+      fetchImpl:()=>assert.fail('receiver must not perform notification I/O')});
+    const response=await instance(event({...lead,source,contactMethod,packageName}),context);
+    assert.equal(response.statusCode,202);assert.equal(JSON.parse(response.body).ok,true);assert.equal(writes,1);
   }
 });
 
@@ -411,44 +403,12 @@ test('a storage failure prevents notification and success', async () => {
   assert.ok(!result.body.includes('private database error'));
 });
 
-test('relay receives only anonymous metadata and a shared secret after storage', async () => {
-  const order = [];
-  const leadStore = { databaseConfigured: () => true, save: async () => { order.push('store'); } };
-  const instance = createHandler({ env: { ...env, DELIVERY_MODE: 'cloudflare-relay' }, leadStore, fetchImpl: async (url, options) => {
-    order.push('relay');
-    assert.equal(url, 'https://api.photoprobiz.ru/lead');
-    assert.equal(options.headers.Origin, 'https://photoprobiz.ru');
-    assert.equal(options.headers['X-Relay-Token'], env.RELAY_TOKEN);
-    const relayed = JSON.parse(options.body);
-    assert.deepEqual(Object.keys(relayed).sort(), ['event', 'serverReceivedAt', 'site', 'submissionId']);
-    assert.equal(relayed.event, 'new_lead');
-    assert.equal(relayed.site, 'photoprobiz.ru');
-    assert.equal(relayed.submissionId, lead.submissionId);
-    assert.ok(!JSON.stringify(options).includes(lead.name));
-    assert.ok(!JSON.stringify(options).includes(lead.contact));
-    assert.ok(!options.body.includes(env.TELEGRAM_BOT_TOKEN));
-    return success();
-  } });
-  assert.equal((await instance(event(), context)).statusCode, 200);
-  assert.deepEqual(order, ['store', 'relay']);
-});
-
-test('missing relay secret and delivery failures are explicit', async () => {
-  const withoutSecret = await createHandler({ env: { DELIVERY_MODE: 'cloudflare-relay' }, leadStore: saved() })(event(), context);
-  assert.equal(withoutSecret.statusCode, 503);
-  assert.equal(JSON.parse(withoutSecret.body).code, 'RELAY_NOT_CONFIGURED');
-  for (const fetchImpl of [async () => ({ ok: true, json: async () => ({}) }), async () => { throw Error('network'); }]) {
-    let calls = 0;
-    const instance = handler({ env: { ...env, DELIVERY_MODE: 'cloudflare-relay' }, fetchImpl: (...args) => { calls += 1; return fetchImpl(...args); } });
-    assert.equal((await instance(event(), context)).statusCode, 502);
-    assert.equal(calls, 1);
-  }
-});
-
-test('network timeouts return errors without disclosing secrets', async () => {
-  const timedOut = await handler({ telegramTimeoutMs: 5, fetchImpl: (_, { signal }) => new Promise((_, reject) => signal.addEventListener('abort', () => reject(Error('aborted')), { once: true })) })(event(), context);
-  assert.equal(timedOut.statusCode, 504);
-  assert.ok(!timedOut.body.includes(env.TELEGRAM_BOT_TOKEN));
+test('legacy delivery configuration safely stores without calling the retired route', async()=>{
+  let writes=0;
+  const response=await handler({env:{...env,DELIVERY_MODE:'cloudflare-relay'},leadStore:{databaseConfigured:()=>true,
+    save:async(_lead,_time,_token,_host,queue)=>{writes++;assert.equal(queue,false);}},
+    fetchImpl:()=>assert.fail('no relay or Telegram')})(event(),context);
+  assert.equal(response.statusCode,200);assert.equal(writes,1);assert.equal(JSON.parse(response.body).notification,'disabled');
 });
 
 test('storage records use separate one-year and three-year expirations', () => {
@@ -506,7 +466,7 @@ test('existing CRM metadata tables receive a nullable revenue column without reb
   ]);
 });
 
-test('YDB store creates lead, consent and CRM metadata tables once and upserts both consent records', async () => {
+test('YDB store creates the outbox alongside CRM tables and uses one transaction for a new submission', async () => {
   const createdTables = [];
   const existingTables = new Set();
   const queries = [];
@@ -521,8 +481,9 @@ test('YDB store creates lead, consent and CRM metadata tables once and upserts b
       existingTables.add(tableName);
       createdTables.push({ tableName, description });
     },
+    beginTransaction:async()=>({id:'tx'}), commitTransaction:async()=>{}, rollbackTransaction:async()=>{},
     prepareQuery: async (query) => query,
-    executeQuery: async (query, params) => { queries.push({ query, params }); },
+    executeQuery: async (query, params) => { if(!query.includes('SELECT')) queries.push({ query, params }); },
   };
   class Driver {
     constructor(options) { assert.equal(options.endpoint, env.ENDPOINT); assert.equal(options.database, env.DATABASE); this.tableClient = { withSessionRetry: async (callback) => callback(session) }; }
@@ -549,13 +510,13 @@ test('YDB store creates lead, consent and CRM metadata tables once and upserts b
   const store = createYdbStore({ env, sdk });
   await store.save(lead, '2026-09-11T12:00:00.000Z', context.token.access_token);
   await store.save(lead, '2026-09-11T12:00:01.000Z', context.token.access_token);
-  assert.equal(createdTables.length, 3);
+  assert.equal(createdTables.length, 4);
   assert.equal(createdTables[0].tableName, LEADS_TABLE);
   assert.equal(createdTables[1].tableName, CONSENT_TABLE);
-  assert.equal(createdTables[2].tableName, LEAD_META_TABLE);
+  assert.equal(createdTables[3].tableName, LEAD_META_TABLE);
   assert.deepEqual(createdTables[0].description.columns.map(({ name }) => name), LEADS_COLUMNS.map(([name]) => name));
   assert.deepEqual(createdTables[1].description.columns.map(({ name }) => name), CONSENT_COLUMNS.map(([name]) => name));
-  assert.deepEqual(createdTables[2].description.columns.map(({ name }) => name), LEAD_META_COLUMNS.map(([name]) => name));
+  assert.deepEqual(createdTables[3].description.columns.map(({ name }) => name), LEAD_META_COLUMNS.map(([name]) => name));
   assert.deepEqual(createdTables[0].description.primaryKey, ['submission_id']);
   assert.deepEqual(createdTables[0].description.ttlSettings, { dateTypeColumn: { columnName: 'expires_at', expireAfterSeconds: 0 } });
   assert.equal(queries.length, 2);
@@ -576,6 +537,7 @@ test('YDB store creates lead, consent and CRM metadata tables once and upserts b
   await store.deleteMany([lead.submissionId], context.token.access_token);
   assert.equal(queries[3].query, DELETE_LEADS);
   assert.deepEqual(queries[3].params.$submission_ids.value, [lead.submissionId]);
+  assert.match(queries[3].query, /DELETE FROM notification_outbox/);
   assert.match(queries[3].query, /DELETE FROM lead_meta/);
   assert.match(queries[3].query, /DELETE FROM consent_events/);
   assert.match(queries[3].query, /DELETE FROM leads/);

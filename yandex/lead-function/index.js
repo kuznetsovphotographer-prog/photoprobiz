@@ -14,7 +14,7 @@ const methods = { phone: 'Телефон', telegram: 'Telegram', whatsapp: 'What
 const sources = { modal: 'Всплывающая форма', inline: 'Форма на странице' };
 const DEVICE_TYPES = new Set(['computer', 'phone', 'tablet', 'unknown']);
 const OS_FAMILIES = new Set(['windows', 'macos', 'android', 'ios', 'ipados', 'harmonyos', 'linux', 'chromeos', 'unknown']);
-const DEVICE_PROFILE_REQUIRED_CONSENT_VERSIONS = new Set(['2026-09-12-2', '2026-09-12-3', '2026-11-17']);
+const DEVICE_PROFILE_REQUIRED_CONSENT_VERSIONS = new Set(['2026-09-12-2', '2026-09-12-3', '2026-11-17', '2026-11-18']);
 const DEFAULT_SITE = {
   siteHost: 'photoprobiz.ru',
   label: 'Деловой фотограф',
@@ -24,7 +24,7 @@ const DEFAULT_SITE = {
     'http://127.0.0.1:4173', 'http://127.0.0.1:5173',
     'http://localhost:4173', 'http://localhost:5173',
   ],
-  consentVersions: ['2026-09-11', '2026-09-12', '2026-09-12-2', '2026-09-12-3', '2026-11-17'],
+  consentVersions: ['2026-09-11', '2026-09-12', '2026-09-12-2', '2026-09-12-3', '2026-11-17', '2026-11-18'],
   packages: ['Минимальный', 'Базовый', 'Полный'],
   formIds: ['homepage-inline', 'modal-general', 'modal-package-minimal', 'modal-package-base', 'modal-package-full'],
 };
@@ -56,7 +56,7 @@ function siteConfigurations(env = process.env) {
     const packages = Array.isArray(item.packages)
       ? item.packages.filter((value) => typeof value === 'string' && value.trim() && value.length <= 120) : [];
     if (!HOST_PATTERN.test(siteHost) || !label || !origins.length || !consentVersions.length) return null;
-    return { siteHost, label, origins, consentVersions, formIds, packages };
+    return { siteHost, label, origins, consentVersions, formIds, packages, notifications: item.notifications !== false };
   }).filter(Boolean);
   const byOrigin = new Map();
   for (const config of [DEFAULT_SITE, ...normalized]) for (const origin of config.origins) byOrigin.set(origin, config);
@@ -106,7 +106,15 @@ function parseLead(value, site = DEFAULT_SITE) {
   if (deviceProfileRequired && (!DEVICE_TYPES.has(value.deviceType) || !OS_FAMILIES.has(value.osFamily))) return null;
   if (value.deviceType !== undefined && !DEVICE_TYPES.has(value.deviceType)) return null;
   if (value.osFamily !== undefined && !OS_FAMILIES.has(value.osFamily)) return null;
+  let bookingDetails = '';
+  if (site.siteHost === 'aleksreport.ru') {
+    const kinds = { weddings: 'Свадьбы', family: 'Семейная съёмка', reportage: 'Репортаж' };
+    if (!Object.hasOwn(kinds, value.shootingType)) return null;
+    if (typeof value.bookingDetails !== 'string' || value.bookingDetails.length > 5000) return null;
+    bookingDetails = `Вид съёмки: ${kinds[value.shootingType]}\n${value.bookingDetails}`;
+  }
   return {
+    bookingDetails,
     name, contact, contactMethod: value.contactMethod, source: value.source,
     packageName: value.packageName, phoneCountry: value.phoneCountry,
     consentVersion: value.consentVersion, consentAcceptedAt: value.consentAcceptedAt,
@@ -115,25 +123,13 @@ function parseLead(value, site = DEFAULT_SITE) {
   };
 }
 
-function notificationMessage(lead, serverReceivedAt, siteHost) {
-  return [
-    `Новая заявка с сайта ${siteHost}`, '',
-    `ID заявки: ${lead.submissionId}`,
-    `Получено сервером: ${new Date(serverReceivedAt).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}`,
-    'Имя и телефон сохранены в YDB.',
-  ].join('\n');
-}
-
 function safeYdbDiagnostic(error) {
-  const clean = (value, max = 500) => String(value || '')
-    .replace(/\+\d{10,15}/g, '[phone-redacted]')
-    .replace(/[A-Za-z0-9_-]{35,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/g, '[token-redacted]')
-    .slice(0, max);
+  // SDK messages can include query parameters. Log only fixed categories, never raw errors.
+  const stages = new Set(['connection', 'schema', 'write', 'read']);
+  const code = error?.code ?? error?.statusCode;
   return {
-    stage: clean(error?.ydbStage || 'unknown', 32),
-    name: clean(error?.name || 'Error', 80),
-    code: clean(error?.code || error?.statusCode || '', 80),
-    message: clean(error?.message || 'No error message.'),
+    stage: stages.has(error?.ydbStage) ? error.ydbStage : 'unknown',
+    code: typeof code === 'number' ? code : 'YDB_OPERATION_FAILED',
   };
 }
 
@@ -171,6 +167,7 @@ function publicLead(row) {
     phone: String(row?.phone || ''),
     contactMethod: String(row?.contact_method || ''),
     packageName: String(row?.package_name || ''),
+    bookingDetails: String(row?.booking_details || ''),
     phoneCountry: String(row?.phone_country || ''),
     deviceType: DEVICE_TYPES.has(row?.device_type) ? row.device_type : 'unknown',
     osFamily: OS_FAMILIES.has(row?.os_family) ? row.os_family : 'unknown',
@@ -200,11 +197,11 @@ function monthPeriod(value) {
   };
 }
 
-function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegramTimeoutMs = 8000, leadStore } = {}) {
+function createHandler({ env = process.env, leadStore } = {}) {
   const store = leadStore || createCrmStore({ env });
   const configuredSites = siteConfigurations(env);
   return async function handler(event, context = {}) {
-    const relayMode = env.DELIVERY_MODE === 'cloudflare-relay';
+    const deliveryMode = env.DELIVERY_MODE === 'postbox' ? 'postbox' : 'storage-only';
     const headers = Object.fromEntries(Object.entries(event?.headers || {}).map(([key, value]) => [key.toLowerCase(), value]));
     const params = queryParams(event);
     const origin = headers.origin;
@@ -396,25 +393,29 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
       adminConfigured: adminConfigured(env),
       crmSitesConfigured: configuredSites.length,
       crmDatabasesConfigured: typeof store.databaseCount === 'function' ? store.databaseCount() : 1,
-      deliveryMode: relayMode ? 'cloudflare-relay' : 'telegram',
-      telegramConfigured: Boolean(env.TELEGRAM_BOT_TOKEN?.trim() && env.TELEGRAM_CHAT_ID?.trim()),
+      deliveryMode,
     });
     if (!currentSite) return reply(403, { error: 'Origin is not allowed.' });
     if (event?.httpMethod === 'OPTIONS') return reply(204);
     if (event?.httpMethod !== 'POST') return reply(405, { error: 'Method not allowed.' });
     if (!/^application\/json(?:\s*;|$)/i.test(headers['content-type'] || '')) return reply(415, { error: 'Content-Type must be application/json.' });
     if (typeof event.body !== 'string') return reply(400, { error: 'Invalid JSON.' });
-    if (Buffer.byteLength(event.body) > MAX_BODY_BYTES * (event.isBase64Encoded ? 2 : 1)) return reply(413, { error: 'Request is too large.' });
+    const maxLeadBytes = currentSite.siteHost === 'aleksreport.ru' ? 24576 : MAX_BODY_BYTES;
+    if (Buffer.byteLength(event.body) > maxLeadBytes * (event.isBase64Encoded ? 2 : 1)) return reply(413, { error: 'Request is too large.' });
     const raw = event.isBase64Encoded ? Buffer.from(event.body, 'base64').toString('utf8') : event.body;
-    if (Buffer.byteLength(raw) > MAX_BODY_BYTES) return reply(413, { error: 'Request is too large.' });
+    if (Buffer.byteLength(raw) > maxLeadBytes) return reply(413, { error: 'Request is too large.' });
     let payload;
     try { payload = JSON.parse(raw); } catch { return reply(400, { error: 'Invalid JSON.' }); }
     const lead = parseLead(payload, currentSite);
     if (!lead) return reply(400, { error: 'Invalid lead data.' });
     const serverReceivedAt = new Date().toISOString();
+    let stored;
     try {
-      await store.save(lead, serverReceivedAt, context?.token?.access_token, currentSite.siteHost);
+      stored = await store.save(lead, serverReceivedAt, context?.token?.access_token, currentSite.siteHost,
+        deliveryMode === 'postbox' && currentSite.notifications !== false);
+
     } catch (error) {
+      if (error?.code === 'SUBMISSION_CONFLICT') return reply(409, { error: 'Submission ID already belongs to different data.', code: 'SUBMISSION_CONFLICT' });
       const diagnostic = safeYdbDiagnostic(error);
       console.error('YDB_OPERATION_FAILED', diagnostic);
       const stageCodes = {
@@ -428,60 +429,12 @@ function createHandler({ env = process.env, fetchImpl = globalThis.fetch, telegr
       });
     }
 
-    // The browser contacts Yandex only. Existing Cloudflare delivery is called
-    // server-to-server because direct Telegram connections time out in this runtime.
-    // Do not retry via another route: a timed-out request may already be delivered.
-    if (relayMode) {
-      if (!env.RELAY_TOKEN?.trim()) {
-        return reply(503, { error: 'Relay is not configured.', code: 'RELAY_NOT_CONFIGURED' });
-      }
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), telegramTimeoutMs);
-      try {
-        const response = await fetchImpl('https://api.photoprobiz.ru/lead', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json', Origin: 'https://photoprobiz.ru',
-            'X-Relay-Token': env.RELAY_TOKEN?.trim() || '',
-          },
-          body: JSON.stringify({
-            event: 'new_lead', site: currentSite.siteHost,
-            submissionId: lead.submissionId, serverReceivedAt,
-          }),
-          signal: controller.signal,
-        });
-        const result = await response.json();
-        if (!response.ok || result?.ok !== true) return reply(502, { error: 'Could not deliver the lead.', code: 'RELAY_DELIVERY_FAILED' });
-        return reply(200, { ok: true });
-      } catch {
-        return reply(controller.signal.aborted ? 504 : 502, {
-          error: 'Could not deliver the lead.',
-          code: controller.signal.aborted ? 'RELAY_TIMEOUT' : 'RELAY_DELIVERY_FAILED',
-        });
-      } finally { clearTimeout(timer); }
-    }
-    const token = env.TELEGRAM_BOT_TOKEN?.trim();
-    const chatId = env.TELEGRAM_CHAT_ID?.trim();
-    if (!token || !chatId) return reply(503, { error: 'Telegram is not configured.', code: 'TELEGRAM_NOT_CONFIGURED' });
+    // Notification delivery is a separate private invocation. Never fail an accepted form for mail errors.
+    const notification = stored?.created === false ? 'already-recorded'
+      : deliveryMode === 'postbox' && currentSite.notifications !== false ? 'pending' : 'disabled';
+    return reply(notification === 'pending' ? 202 : 200, { ok: true, stored: true,
+      submissionId: lead.submissionId, notification });
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), telegramTimeoutMs);
-    try {
-      const response = await fetchImpl(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: chatId, text: notificationMessage(lead, serverReceivedAt, currentSite.siteHost) }),
-        signal: controller.signal,
-      });
-      const result = await response.json();
-      if (!response.ok || result?.ok !== true) return reply(502, { error: 'Could not deliver the lead.', code: 'TELEGRAM_DELIVERY_FAILED' });
-      return reply(200, { ok: true });
-    } catch {
-      // Never log request data, Telegram responses, or errors containing the token URL.
-      return reply(controller.signal.aborted ? 504 : 502, {
-        error: 'Could not deliver the lead.',
-        code: controller.signal.aborted ? 'TELEGRAM_TIMEOUT' : 'TELEGRAM_DELIVERY_FAILED',
-      });
-    } finally { clearTimeout(timer); }
   };
 }
 
